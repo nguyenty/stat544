@@ -1,0 +1,156 @@
+
+\documentclass{article}
+% \usepackage[sc]{mathpazo}
+% \usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{amsmath, amssymb, mathtools }
+\usepackage{enumerate}
+\usepackage{array}
+\usepackage{fancyhdr}
+\usepackage{verbatim}
+\usepackage{color}
+\usepackage{pstricks}
+% \usepackage{longtable}
+% \usepackage{fancyvrb}
+% \usepackage{fancyhdr}
+\usepackage{eqnarray}
+%\pagestyle{fancy}
+\usepackage{psfrag}
+\usepackage{epsfig,epsf}
+\usepackage{pstricks}
+\geometry{verbose,tmargin=2.5cm,bmargin=2.5cm,lmargin=2.5cm,rmargin=2.5cm}
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{2}
+\usepackage{url}
+\usepackage[unicode=true,pdfusetitle,
+            bookmarks=true,bookmarksnumbered=true,bookmarksopen=true,bookmarksopenlevel=2,
+            breaklinks=false,pdfborder={0 0 1},backref=false,colorlinks=false]
+{hyperref}
+\hypersetup{
+  pdfstartview={XYZ null null 1}}
+\usepackage{breakurl}
+\begin{document}
+%\SweaveOpts{concordance=TRUE}
+
+<<setup, include=FALSE, cache=FALSE>>=
+  # set global chunk options
+  opts_chunk$set(fig.path='figure/minimal-', fig.align='center', fig.show='hold')
+options(replace.assign=TRUE,width=90)
+@
+
+\title{Final STAT544 Spring2014}
+
+\author{Yet Nguyen}
+
+\maketitle
+<<echo=FALSE>>=
+  options(width=65)
+@
+
+\section{Description of the data}
+
+The data I am going to work on is RNA-Seq data from RFI (Residual Feed Intake) project
+from animal science research group. The data has an integer count table about ten thousand rows and 24 columns, and a RFI covariate. Each column is an experimental unit. Those 24 experimental 
+units are in one of the two groups: half of them is in HRFI (High Residual Feed Intake),
+the other half is LRFI (Low Residual Feed Intake), denoted as group 1, and 2, correspondingly. The RFI value is the 
+associated continuous covariate with each experimental unit. I want to know which 
+genes are differentially expressed between two groups in the presence of the associated 
+covariate RFI. 
+
+\section{Model}
+
+Let $y_{ijk}$ be the RNA expression level of gene $j\in \{1,\dots,J\}$ from experimential unit $k \in \{1, \dots, 12\}$ in group $i \in \{1,2\}$. Let $x_{ik}$ be the RFI value corresponding to the the experimential unit $k$ in group $i$. Suppose the count data for each gene have a Poisson distribution (or Negative Binomial distribution), with the log link function of the mean as a linear function of group effect and covariate effects. In particular, 
+\begin{align*}
+& y_{ijk} \sim Poisson(\lambda_{ijk} )\\
+& log(\lambda_{ijk}) = \alpha_j + (-1)^{i}\tau_j + \beta_j x_{ik}\\
+& \alpha_j \sim N(0, 100^2)\\
+& \tau_j \sim \pi_\tau \delta_0 + (1-\pi_\tau) N(0, \sigma^2_\tau)\\
+&\beta_j \sim \pi_\beta \delta_0 + (1-\pi_\beta)N(0, \sigma^2_\beta)\\
+& \pi_\tau \sim Beta(12, 1)\\
+& \pi_\beta \sim Beta(12, 1)\\
+& \sigma_\tau \sim Unif(0, 100)\\
+& \sigma_\beta \sim Unif(0, 100).
+\end{align*}
+here $\delta_0$ is the Dirac probability at $0$. 
+Another option for the priors of parameters can be 
+
+\begin{align*}
+& y_{ijk} \sim Poisson(\lambda_{ijk} )\\
+& log(\lambda_{ijk}) = \alpha_j + (-1)^{i}\tau_j + \beta_j x_{ik}\\
+& \alpha_j \sim N(0, 100^2)\\
+& \tau_j \sim N(0, \sigma^2_{\tau_j})\\
+& \sigma_{\tau_j} \sim Ca^+ (0, \sigma_\tau)\\
+& \sigma_\tau \sim Ca^+(0,1)\\
+& \beta_j \sim N(0, \sigma^2_{\beta_j})\\
+& \sigma_{\beta_j} \sim Ca^+ (0, \sigma_\beta)\\
+& \sigma_\beta \sim Ca^+(0,1).
+\end{align*}
+
+The inference goal is to find $P(|\tau_j|>\varepsilon|y)$ given $\varepsilon >0$.
+
+\section{Fitting Model in JAGS}
+
+In this project, I pick up 100 genes for analysis. Below is the JAGS model 
+
+<<tidy=FALSE, results='hide',echo=TRUE>>=
+library(rjags)
+model1 <- "
+model{
+# likelihood 
+for (i in 1:length(y)){
+  y[i] ~ dpois(lambda[i])
+  log(lambda[i]) <- alpha[gene[i]] + (-1)^line[i]*tau[gene[i]] + beta[gene[i]]*cov[i]   
+}
+# prior level 1
+for (i in 1:ngene){
+  alpha[i] ~ dnorm(0,1/10000)
+  tau[i] ~ dnorm(0, 1/st[i]^2)
+  st[i] <- abs(hct[i])
+  hct[i] ~ dt(0, 1/sct^2,1)
+  
+  beta[i] ~ dnorm(0, 1/sb[i]^2)
+  sb[i] <- abs(hcb[i])
+  hcb[i] ~ dt(0, 1/scb^2,1)
+}
+# prior level 2
+sct <- abs(hctt)
+hctt ~ dt(0, 1, 1)
+scb <- abs(hcbb)
+hcbb ~ dt(0, 1, 1)
+}
+"
+#load(file = "/home/ntyet/New folder/STAT544/HW/finalproject/data.RData")
+
+#load(file = "/run/user/1000/gvfs/smb-share:server=smb.stat.iastate.edu,share=ntyet/New folder/STAT544/HW/finalproject/data.RData")
+
+
+model2 <- "
+model{
+# likelihood 
+for (i in 1:length(y)){
+  y[i] ~ dpois(lambda[i])
+  log(lambda[i]) <- alpha[gene[i]] + (-1)^line[i]*tau[gene[i]] + beta[gene[i]]*cov[i]   
+}
+# prior level 1
+for (i in 1:ngene){
+  alpha[i] ~ dnorm(0,1/10000)
+  tau[i] <- (1-bintau[i])*normtau[i]
+  bintau[i] ~ dbern(pitau)
+  normtau[i] ~ dnorm(0,1/sigmatau^2)
+  beta[i] <- (1-binbeta[i])*normbeta[i]
+  binbeta[i] ~ dbern(pibeta)
+  normbeta[i] ~ dnorm(0,1/sigmabeta^2)
+  }
+# prior level 2
+pitau ~ dbeta(8,1)
+pibeta ~ dbeta(8,1)
+sigmatau ~ dunif(0,100)
+sigmabeta ~ dunif(0,100)
+}
+"
+# m <- jags.model(textConnection(model), data, n.chains = 1)
+# 
+# res <- coda.samples(m, c("tau", "beta"), 20000)
+# summary(res)
+@
+\end{document}
