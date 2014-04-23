@@ -30,71 +30,80 @@
   pdfstartview={XYZ null null 1}}
 \usepackage{breakurl}
 \begin{document}
-%\SweaveOpts{concordance=TRUE}
 
 <<setup, include=FALSE, cache=FALSE>>=
   # set global chunk options
-  opts_chunk$set(fig.path='figure/minimal-', fig.align='center', fig.show='hold')
-options(replace.assign=TRUE,width=90)
+opts_chunk$set(fig.path='figure/minimal-', fig.align='center', fig.show='hold')
+options(replace.assign=TRUE,width=85)
+set.seed(20140423)
 @
 
 \title{Final STAT544 Spring2014}
 
-\author{Yet Nguyen}
+\author{Yet Tien Nguyen}
 
 \maketitle
-<<echo=FALSE>>=
-  options(width=65)
-@
 
 \section{Description of the data}
 
 The data I am going to work on is RNA-Seq data from RFI (Residual Feed Intake) project
 from animal science research group. The data has an integer count table about ten thousand rows and 24 columns, and a RFI covariate. Each column is an experimental unit. Those 24 experimental 
-units are in one of the two groups: half of them is in HRFI (High Residual Feed Intake),
-the other half is LRFI (Low Residual Feed Intake), denoted as group 1, and 2, correspondingly. The RFI value is the 
+units are in one of the two lines: half of them is in HRFI (High Residual Feed Intake) line,
+the other half is LRFI (Low Residual Feed Intake) line, denoted as line 1, and 2, correspondingly. The RFI value is the 
 associated continuous covariate with each experimental unit. I want to know which 
-genes are differentially expressed between two groups in the presence of the associated 
+genes are differentially expressed between two lines in the presence of the associated 
 covariate RFI. 
 
 \section{Model}
 
 Let $y_{ijk}$ be the RNA expression level of gene $j\in \{1,\dots,J\}$ from experimential unit $k \in \{1, \dots, 12\}$ in group $i \in \{1,2\}$. Let $x_{ik}$ be the RFI value corresponding to the the experimential unit $k$ in group $i$. Suppose the count data for each gene have a Poisson distribution (or Negative Binomial distribution), with the log link function of the mean as a linear function of group effect and covariate effects. In particular, 
-\begin{align*}
-& y_{ijk} \sim Poisson(\lambda_{ijk} )\\
-& log(\lambda_{ijk}) = \alpha_j + (-1)^{i}\tau_j + \beta_j x_{ik}\\
-& \alpha_j \sim N(0, 100^2)\\
-& \tau_j \sim \pi_\tau \delta_0 + (1-\pi_\tau) N(0, \sigma^2_\tau)\\
-&\beta_j \sim \pi_\beta \delta_0 + (1-\pi_\beta)N(0, \sigma^2_\beta)\\
-& \pi_\tau \sim Beta(12, 1)\\
-& \pi_\beta \sim Beta(12, 1)\\
-& \sigma_\tau \sim Unif(0, 100)\\
-& \sigma_\beta \sim Unif(0, 100).
-\end{align*}
-here $\delta_0$ is the Dirac probability at $0$. 
+\begin{align}\label{eq1}
+& y_{ijk} \sim Poisson(\lambda_{ijk} )\notag\\
+& log(\lambda_{ijk}) = \alpha_j + (-1)^{i}\tau_j + \beta_j x_{ik}\notag\\
+& \alpha_j \sim N(0, 100^2)\notag\\
+& \tau_j \sim \pi_\tau \delta_0 + (1-\pi_\tau) N(0, \sigma^2_\tau) \quad \mbox{ equivalently, } \tau_j = (1-\pi_{\tau_j})* N(0, \sigma^2_\tau), \pi_{\tau_j} \sim Bern(\pi_\tau)\notag\\
+&\beta_j \sim \pi_\beta \delta_0 + (1-\pi_\beta)N(0, \sigma^2_\beta) 
+\quad \mbox{ equivalently, } \beta_j = (1-\pi_{\beta_j})* N(0, \sigma^2_\beta), \pi_{\beta_j} \sim Bern(\pi_\beta)\\
+& \pi_\tau \sim Beta(8, 1)\notag\\
+& \pi_\beta \sim Beta(8, 1)\notag\\
+& \sigma_\tau \sim Unif(0, 100)\notag\\
+& \sigma_\beta \sim Unif(0, 100).\notag
+\end{align}
+here $\delta_0$ is the Dirac probability at $0$. Note that the specification of $\pi_\tau \sim Beta(8, 1), \pi_\beta \sim Beta(8, 1)$ is based on Section 2.2 of the paper "An Exploration of Aspects of Bayesian Multiple Testing" by James G. Scott and James O. Berger    \url{http://www.isds.duke.edu/courses/Fall05/sta395/joelucas2.pdf} where we believe that the proportion of signals coming from lines and covariate are small (around 80\%-90\%).  
 Another option for the priors of parameters can be 
-
-\begin{align*}
-& y_{ijk} \sim Poisson(\lambda_{ijk} )\\
-& log(\lambda_{ijk}) = \alpha_j + (-1)^{i}\tau_j + \beta_j x_{ik}\\
-& \alpha_j \sim N(0, 100^2)\\
-& \tau_j \sim N(0, \sigma^2_{\tau_j})\\
-& \sigma_{\tau_j} \sim Ca^+ (0, \sigma_\tau)\\
+\begin{align}\label{eq2}
+& \alpha_j \sim N(0, 100^2) \notag\\
+& \tau_j \sim N(0, \sigma^2_{\tau_j}) \notag\\
+& \sigma_{\tau_j} \sim Ca^+ (0, \sigma_\tau) \notag\\
 & \sigma_\tau \sim Ca^+(0,1)\\
-& \beta_j \sim N(0, \sigma^2_{\beta_j})\\
-& \sigma_{\beta_j} \sim Ca^+ (0, \sigma_\beta)\\
-& \sigma_\beta \sim Ca^+(0,1).
-\end{align*}
+& \beta_j \sim N(0, \sigma^2_{\beta_j})\notag\\
+& \sigma_{\beta_j} \sim Ca^+ (0, \sigma_\beta)\notag\\
+& \sigma_\beta \sim Ca^+(0,1)\notag.
+\end{align}
 
-The inference goal is to find $P(|\tau_j|>\varepsilon|y)$ given $\varepsilon >0$.
+At the end, the inference goal is to find $P(\tau_j \mbox{ is signal} |y)$. If $P(\tau_j \mbox{ is signal }|y) >0.5$, then the gene $j$ is signal, i.e., differentially expressed.
 
-\section{Fitting Model in JAGS}
+In particular, for the model with point mass mixture prior \ref{eq1}, we estimate the posterior probability of signal of gene $j$ by 
+\[
+P(\tau_j \mbox{ is signal }|y) = P(|\tau_j| >0 | y) \approx 
+\frac {1}{M} \sum_{i=1}^M I(\pi_{\tau_j}^{(i)} = 0)
+\]
+where $(\pi_{\tau_j}^{(i)}, i = 1, \dots, M)$ is the posterior MCMC sample of $\pi_{\tau_j}$. 
 
-In this project, I pick up 100 genes for analysis. Below is the JAGS model 
-
-<<tidy=FALSE, results='hide',echo=TRUE>>=
+On the other hand, for the model with horseshoe prior \ref{eq2}, we estimate the posterior probability of signal of gene $j$ by 
+\[
+P(\tau_j \mbox{ is signal }|y) = \frac {1}{M} \sum_{i=1}^M  \big(
+1 - \frac{1}{1+\sigma_{\tau_j}^{2(i)}} \big)
+\]
+where $(\sigma_{\tau_j}^{2(i)}, i = 1, \dots, M)$ is the posterior MCMC sample of $\sigma_{\tau_j}^{2}$. 
+This rule is a modified threshold rule motivated from section 3.4 Thresholding in the paper "The Horseshoe Estimator for Sparse Signals" by Carlos M. Carvalho
+ and Nicholas G. Polson  \url{http://ftp.stat.duke.edu/WorkingPapers/08-31.pdf}. Note that the paper use a normal setting which is different from the Poission setting of this project. 
+\section {Model in JAGS}
+Below is the JAGS code for two models above. 
+<<modelm_pointmass_mixture, tidy=FALSE, results='hide',echo=TRUE, message=FALSE,warning=FALSE>>=
 library(rjags)
-model1 <- "
+#############modelm - using point mass mixture prior for signals###############
+modelm <- "
 model{
 # likelihood 
 for (i in 1:length(y)){
@@ -104,36 +113,7 @@ for (i in 1:length(y)){
 # prior level 1
 for (i in 1:ngene){
   alpha[i] ~ dnorm(0,1/10000)
-  tau[i] ~ dnorm(0, 1/st[i]^2)
-  st[i] <- abs(hct[i])
-  hct[i] ~ dt(0, 1/sct^2,1)
-  
-  beta[i] ~ dnorm(0, 1/sb[i]^2)
-  sb[i] <- abs(hcb[i])
-  hcb[i] ~ dt(0, 1/scb^2,1)
-}
-# prior level 2
-sct <- abs(hctt)
-hctt ~ dt(0, 1, 1)
-scb <- abs(hcbb)
-hcbb ~ dt(0, 1, 1)
-}
-"
-#load(file = "/home/ntyet/New folder/STAT544/HW/finalproject/data.RData")
 
-#load(file = "/run/user/1000/gvfs/smb-share:server=smb.stat.iastate.edu,share=ntyet/New folder/STAT544/HW/finalproject/data.RData")
-
-
-model2 <- "
-model{
-# likelihood 
-for (i in 1:length(y)){
-  y[i] ~ dpois(lambda[i])
-  log(lambda[i]) <- alpha[gene[i]] + (-1)^line[i]*tau[gene[i]] + beta[gene[i]]*cov[i]   
-}
-# prior level 1
-for (i in 1:ngene){
-  alpha[i] ~ dnorm(0,1/10000)
   tau[i] <- (1-bintau[i])*normtau[i]
   bintau[i] ~ dbern(pitau)
   normtau[i] ~ dnorm(0,1/sigmatau^2)
@@ -141,16 +121,175 @@ for (i in 1:ngene){
   binbeta[i] ~ dbern(pibeta)
   normbeta[i] ~ dnorm(0,1/sigmabeta^2)
   }
-# prior level 2
+#prior level 2
 pitau ~ dbeta(8,1)
 pibeta ~ dbeta(8,1)
 sigmatau ~ dunif(0,100)
 sigmabeta ~ dunif(0,100)
 }
 "
-# m <- jags.model(textConnection(model), data, n.chains = 1)
-# 
-# res <- coda.samples(m, c("tau", "beta"), 20000)
-# summary(res)
 @
+
+
+<<horseshoe_prior, tidy=FALSE, results='hide',echo=TRUE, message=FALSE,warning=FALSE>>=
+#########modelh - using horseshoe prior for the signals##############
+modelh <- "
+model{
+# likelihood 
+for (i in 1:length(y)){
+  y[i] ~ dpois(lambda[i])
+  log(lambda[i]) <- alpha[gene[i]] + (-1)^line[i]*tau[gene[i]] + beta[gene[i]]*cov[i]   
+}
+# prior level 1
+for (j in 1:ngene){
+  alpha[j] ~ dnorm(0,1/10000)
+  tau[j] ~ dnorm(0, 1/sigmatauj[j]^2)
+  sigmatauj[j] ~ dt(0, 1/sigmatau^2, 1) T(0,)
+  beta[j] ~ dnorm(0, 1/sigmabetaj[j]^2)
+  sigmabetaj[j] ~ dt(0, 1/sigmabeta^2, 1) T(0,)
+}
+# prior level 2
+sigmatau ~ dt(0, 1, 1) T(0,)
+sigmabeta ~ dt(0, 1, 1) T(0,)
+}
+"
+@
+
+
+\section{Evaluation models using simulation data}
+
+We simulate data to evaluate the performance of the two models. For simplicity, 
+we simulate a count table with dimension $100\times 24$ where 100 rows corresponding to 
+100 genes, first 12 columns coresponding to line 1, the next 12 colums corresponding to 
+line 2, as well as 24 covariate $x_{jk} \sim N(0,1)$. The element of count table at row $j$, colum $k$ is simulated from $Poisson(\lambda_{jk})$ where 
+\begin{align*}
+\lambda_{jk} &= \alpha_j -\tau_j + \beta_j x_{jk} ,\quad \mbox{for }\quad k = 1,\dots, 12\\
+\lambda_{jk} &= \alpha_j +\tau_j + \beta_j x_{jk} ,\quad \mbox{for }\quad k = 13,\dots, 24\\
+\alpha_j     & \sim N(3,2^2) \quad \mbox{for}\quad j = 1,\dots, 50\\
+\tau_j       &= (1-Bern(0.8))*N(\mu_\tau,0.25^2) \quad \mu_\tau \in \{0.5, 1, 2\} \\
+\beta_j      &=  (1-Bern(0.8))*N(\mu_\beta,0.25^2) \quad \mu_\beta \in \{0.5, 1, 2\}.
+\end{align*}
+
+<<simulation_data, tidy=FALSE,results='hide',echo=TRUE, message=FALSE,warning=FALSE>>=
+library(reshape)
+sim_data <- function(K, ngene, mualpha, sigmaalpha, 
+                     pitau,mutau, sigmatau, pibeta,
+                     mubeta, sigmabeta){
+  # prior level 1
+  bintau <- rbinom(ngene,1,pitau)
+  tau <-(1-bintau)*rnorm(ngene, mutau, sigmatau)
+  beta <- (1-rbinom(ngene,1,pibeta))*rnorm(ngene, mubeta, sigmabeta)
+  alpha <- rnorm(ngene, mualpha,sigmaalpha )
+  lambda <- matrix(0, ncol = 2*K, nrow = ngene)
+  count <- matrix(0, ncol = 2*K, nrow = ngene)
+  for (j in 1:ngene){
+  for (k in 1:K){
+    lambda[j,k] <- exp(alpha[j] - tau[j] + beta[j]*x[k])
+    lambda[j, k+K] <- exp(alpha[j] + tau[j] + beta[j]*x[k+K])
+    count[j,k] <- rpois(1, lambda[j,k])
+    count[j,k+K] <- rpois(1, lambda[j,k+K])
+    }
+  }
+  melt_count <- melt(count)
+  melt_count$line <- NULL
+  melt_count$line[melt_count$X2%in%c(1:K)] <- 1
+  melt_count$line[melt_count$X2%in%c((K+1):(2*K))] <- 2
+  melt_count$cov <- NULL
+  for(i in 1:(2*K)) melt_count$cov[melt_count$X2==i] <- x[i]
+  dat <- list(y = melt_count$value, 
+              gene = melt_count$X1, 
+              line = melt_count$line, 
+              cov = melt_count$cov, 
+              ngene = ngene,
+              tau = tau, 
+              beta = beta, 
+              alpha = alpha)
+  return(dat)
+
+}
+K <- 12
+x <- rnorm(2*K, 0,1)
+ngene <- 50
+# prior level 2
+mualpha <- 3
+sigmaalpha <- 2
+pitau <-  0.8
+mutau <- c(0.5)
+sigmatau <- 0.25
+pibeta <- 0.8
+mubeta <- c(0.5)
+sigmabeta  <- 0.25
+@
+\section{Running two JAGS models for simulation data}
+Next, we run a MCMC using the point mass mixture model. 
+<<run_mm_simulationdata,cache=FALSE, tidy=FALSE>>=
+out <- function(K, ngene, mualpha, sigmaalpha, 
+                     pitau,mutau, sigmatau, pibeta,
+                     mubeta, sigmabeta){
+  data <- sim_data(K, ngene, mualpha, sigmaalpha, 
+                     pitau,mutau, sigmatau, pibeta,
+                     mubeta, sigmabeta)
+  
+  mm <- jags.model(textConnection(modelm), data[1:5],n.chains = 1)
+  resm <- coda.samples(mm, c("tau","alpha","beta",
+                             "pitau","pibeta", 
+                             "binbeta","bintau", 
+                             "sigmatau","sigmabeta"), 1000) 
+  
+  mm_tau_est <- which(apply(resm[[1]][,paste("bintau[", 1:ngene,"]",sep ="")], 2, 
+      function(x) mean(abs(1-x))) > 0.5)
+  mm_tau_true <- which(data$tau!=0)
+  mm_tau_correct <- sum(mm_tau_est%in%mm_tau_true)
+  
+  mm_beta_est <- which(apply(resm[[1]][,paste("binbeta[", 1:ngene,"]",sep ="")], 2, 
+      function(x) mean(abs(1-x))) > 0.5)
+  mm_beta_true <- which(data$beta!=0)
+  mm_beta_correct <- sum(mm_beta_est%in%mm_beta_true)
+  
+
+  mh <- jags.model(textConnection(modelh), data[1:5] ,n.chains = 1)
+  resh <- coda.samples(mh, c("tau","alpha","beta",
+                             "sigmatauj", "sigmabetaj",  
+                             "sigmatau","sigmabeta"), 1000) 
+  
+  
+  mh_tau_est <- which(apply(resh[[1]][,paste("sigmatauj[", 1:ngene,"]",sep ="")], 2, 
+      function(x) mean(1-1/(x^2+1))) > 0.5)
+  mh_tau_true <- which(data$tau!=0)
+  mh_tau_correct <- sum(mh_tau_est%in%mh_tau_true)
+  
+  mh_beta_est <-which(apply(resh[[1]][,paste("sigmabetaj[", 1:ngene,"]",sep ="")], 2, 
+      function(x) mean(1-1/(x^2+1))) > 0.5)
+  
+  mh_beta_true <- which(data$beta!=0)
+  mh_beta_correct <- sum(mh_beta_est%in%mh_beta_true)
+  return(list(mm_tau_est = length(mm_tau_est), 
+              mm_tau_correct = mm_tau_correct,
+              mm_tau_true = length(mm_tau_true), 
+              
+              mm_beta_est = length(mm_beta_est), 
+              mm_beta_correct = mm_beta_correct,
+              mm_beta_true = length(mm_beta_true),
+              
+              mh_tau_est = mh_tau_est, 
+              mh_tau_correct = mh_tau_correct,
+              mh_tau_true = length(mh_tau_true),
+              
+              mh_beta_est = mh_beta_est, 
+              mh_beta_correct = mh_beta_correct,
+              mh_beta_true = length(mh_beta_true)
+              ))
+}
+
+m0 <- proc.time()
+
+out(K, ngene, mualpha, sigmaalpha, 
+                     pitau,mutau, sigmatau, pibeta,
+                     mubeta, sigmabeta)
+
+
+
+@
+
+
 \end{document}
