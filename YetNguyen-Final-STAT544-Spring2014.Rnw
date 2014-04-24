@@ -293,9 +293,10 @@ for(i in 1:3){
 }
 
 @
-Results 
+Results are below, where each 
 
 <<>>=
+# 1: mm_tau_est 2: mm_tau_correct_est 3: mh_tau_est 4: mh_tau_correct_est 5: tau_true  6: mm_beta_est 7: mm_beta_correct_est 8: mh_beta_est 9: mh_beta_correct_est 10: beta_true
 post_out[1,1,]
 post_out[1,2,]
 post_out[1,3,]
@@ -308,22 +309,30 @@ post_out[3,3,]
 
 @
 
-Looking at the results, based on the above classification criterions, it seems that the point mass mixture  model can predict very well the signals coming from lines and covariate. 
+Based on the above classification criterions,  the results show that the point mass mixture  model predict very well the signals coming from lines and covariate, and indeed it predicts better than the horseshoe prior does. When the signals are large, then the horse prior model performs well also. 
 
 
-Moreover, by checking the plots of posterior densitiies of $\tau_j$ and $\beta_j$, we also have the same conclusion. Therefore, we will apply the model with point mass mixture prior to analyze the RFI data. 
+Moreover, by checking the plots of posterior densitiies of $\tau_j$ and $\beta_j$, we also have the same conclusion. The next step is we will apply the two methods above in analyzing RFI data. 
 
 \section{Analyze RFI data}
 
 As mentioned before, we only analyze 200 genes in the RNASeq - RFI data set. 
-<<>>=
+<<realdata,cache = 1>>=
 load("data.RData")
-mm <- jags.model(textConnection(modelm), data[1:5],n.chains = 1)
-  resm <- coda.samples(mm, c("tau","alpha","beta",
-                             "pitau","pibeta", 
-                             "binbeta","bintau", 
-                             "sigmatau","sigmabeta"), 5000) 
-
+mm <- jags.model(textConnection(modelm), data,n.chains = 1)
+resm <- coda.samples(mm, c("tau","beta",
+                             "binbeta","bintau"), 5000) 
+mm_tau_est <- which(apply(resm[[1]][,paste("bintau[", 1:200,"]",sep ="")], 2, 
+      function(x) mean(abs(1-x))) > 0.5)
+mm_tau_est  
+mm_beta_est <- which(apply(resm[[1]][,paste("binbeta[", 1:200,"]",sep ="")], 2, 
+      function(x) mean(abs(1-x))) > 0.5)
+  
+mm_beta_est
+plot(resm[,"tau[5]"])
 @
+
+
+List of genes that are differentially expressed according to the model \ref{eq1} is 
 
 \end{document}
