@@ -176,6 +176,7 @@ sim_data <- function(K, ngene, mualpha, sigmaalpha,
                      pitau,mutau, sigmatau, pibeta,
                      mubeta, sigmabeta){
   # prior level 1
+  x <- rnorm(2*K, 0,1)
   bintau <- rbinom(ngene,1,pitau)
   tau <-(1-bintau)*rnorm(ngene, mutau, sigmatau)
   beta <- (1-rbinom(ngene,1,pibeta))*rnorm(ngene, mubeta, sigmabeta)
@@ -207,21 +208,10 @@ sim_data <- function(K, ngene, mualpha, sigmaalpha,
   return(dat)
 
 }
-K <- 12
-x <- rnorm(2*K, 0,1)
-ngene <- 50
-# prior level 2
-mualpha <- 3
-sigmaalpha <- 2
-pitau <-  0.8
-mutau <- c(0.5)
-sigmatau <- 0.25
-pibeta <- 0.8
-mubeta <- c(0.5)
-sigmabeta  <- 0.25
+
 @
 \section{Running two JAGS models for simulation data}
-Next, we run a MCMC using the point mass mixture model. 
+Next, we run a MCMC using the point mass mixture model and horseshoe prior model. 
 <<run_mm_simulationdata,cache=FALSE, tidy=FALSE>>=
 out <- function(K, ngene, mualpha, sigmaalpha, 
                      pitau,mutau, sigmatau, pibeta,
@@ -234,7 +224,7 @@ out <- function(K, ngene, mualpha, sigmaalpha,
   resm <- coda.samples(mm, c("tau","alpha","beta",
                              "pitau","pibeta", 
                              "binbeta","bintau", 
-                             "sigmatau","sigmabeta"), 1000) 
+                             "sigmatau","sigmabeta"), 5000) 
   
   mm_tau_est <- which(apply(resm[[1]][,paste("bintau[", 1:ngene,"]",sep ="")], 2, 
       function(x) mean(abs(1-x))) > 0.5)
@@ -250,7 +240,7 @@ out <- function(K, ngene, mualpha, sigmaalpha,
   mh <- jags.model(textConnection(modelh), data[1:5] ,n.chains = 1)
   resh <- coda.samples(mh, c("tau","alpha","beta",
                              "sigmatauj", "sigmabetaj",  
-                             "sigmatau","sigmabeta"), 1000) 
+                             "sigmatau","sigmabeta"), 5000) 
   
   
   mh_tau_est <- which(apply(resh[[1]][,paste("sigmatauj[", 1:ngene,"]",sep ="")], 2, 
@@ -263,33 +253,77 @@ out <- function(K, ngene, mualpha, sigmaalpha,
   
   mh_beta_true <- which(data$beta!=0)
   mh_beta_correct <- sum(mh_beta_est%in%mh_beta_true)
-  return(list(mm_tau_est = length(mm_tau_est), 
-              mm_tau_correct = mm_tau_correct,
-              mm_tau_true = length(mm_tau_true), 
-              
+  return(c(   mm_tau_est = length(mm_tau_est), 
+              mm_tau_correct_est = mm_tau_correct,
+              mh_tau_est = length(mh_tau_est), 
+              mh_tau_correct_est = mh_tau_correct,
+              tau_true = length(mm_tau_true), 
               mm_beta_est = length(mm_beta_est), 
-              mm_beta_correct = mm_beta_correct,
-              mm_beta_true = length(mm_beta_true),
-              
-              mh_tau_est = mh_tau_est, 
-              mh_tau_correct = mh_tau_correct,
-              mh_tau_true = length(mh_tau_true),
-              
-              mh_beta_est = mh_beta_est, 
-              mh_beta_correct = mh_beta_correct,
-              mh_beta_true = length(mh_beta_true)
+              mm_beta_correct_est = mm_beta_correct,
+              mh_beta_est = length(mh_beta_est), 
+              mh_beta_correct_est = mh_beta_correct,
+              beta_true = length(mm_beta_true)
               ))
 }
 
-m0 <- proc.time()
-
-out(K, ngene, mualpha, sigmaalpha, 
-                     pitau,mutau, sigmatau, pibeta,
-                     mubeta, sigmabeta)
+@
 
 
+<<run_sim,cache=1,message=FALSE,results='hide'>>=
+K <- 12
+
+ngene <- 100
+# prior level 2
+mualpha <- 3
+sigmaalpha <- 2
+pitau <-  0.8
+mutau <- c(0.5,1,2)
+sigmatau <- 0.25
+pibeta <- 0.8
+mubeta <- c(0.5,1,2)
+sigmabeta  <- 0.25
+post_out <- array(0, dim = c(3,3,10))
+for(i in 1:3){
+  for (j in 1:3){
+    post_out[i,j,] <- out(K, ngene, mualpha, sigmaalpha, 
+                     pitau,mutau[i], sigmatau, pibeta,
+                     mubeta[j] , sigmabeta)
+
+  }
+}
+
+@
+Results 
+
+<<>>=
+post_out[1,1,]
+post_out[1,2,]
+post_out[1,3,]
+post_out[2,1,]
+post_out[2,2,]
+post_out[2,3,]
+post_out[3,1,]
+post_out[3,2,]
+post_out[3,3,]
 
 @
 
+Looking at the results, based on the above classification criterions, it seems that the point mass mixture  model can predict very well the signals coming from lines and covariate. 
+
+
+Moreover, by checking the plots of posterior densitiies of $\tau_j$ and $\beta_j$, we also have the same conclusion. Therefore, we will apply the model with point mass mixture prior to analyze the RFI data. 
+
+\section{Analyze RFI data}
+
+As mentioned before, we only analyze 200 genes in the RNASeq - RFI data set. 
+<<>>=
+load("data.RData")
+mm <- jags.model(textConnection(modelm), data[1:5],n.chains = 1)
+  resm <- coda.samples(mm, c("tau","alpha","beta",
+                             "pitau","pibeta", 
+                             "binbeta","bintau", 
+                             "sigmatau","sigmabeta"), 5000) 
+
+@
 
 \end{document}
