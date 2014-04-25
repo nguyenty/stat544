@@ -395,27 +395,85 @@ xtable(res[10:18,], digit = 0, caption = "The meaning of rownames: mm stands for
 Based on the above classification criterions,  the results show that the point mass mixture  model predict very well the signals coming from lines and covariate, and indeed it predicts better than the horseshoe prior does. When the signals are large, then the horse prior model performs well also. 
 
 
-Moreover, by checking the plots of posterior densitiies of $\tau_j$ and $\beta_j$, we also have the same conclusion. The next step is we will apply the two methods above in analyzing RFI data. 
 
-% \section{Analyze RFI data}
-% 
-% As mentioned before, we only analyze 200 genes in the RNASeq - RFI data set. 
-% <<realdata,cache = 1>>=
-% load("data.RData")
-% mm <- jags.model(textConnection(modelm), data,n.chains = 1)
-% resm <- coda.samples(mm, c("tau","beta",
-%                              "binbeta","bintau"), 500) 
-% mm_tau_est <- which(apply(resm[[1]][,paste("bintau[", 1:200,"]",sep ="")], 2, 
-%       function(x) mean(abs(1-x))) > 0.5)
-% mm_tau_est  
-% mm_beta_est <- which(apply(resm[[1]][,paste("binbeta[", 1:200,"]",sep ="")], 2, 
-%       function(x) mean(abs(1-x))) > 0.5)
-%   
-% mm_beta_est
-% plot(resm[,"tau[5]"])
-% @
-% 
-% 
-% List of genes that are differentially expressed according to the model \ref{eq1} is 
+Moreover, by checking the plots of posterior densitiies of $\tau_j$ and $\beta_j$, we also have the same conclusion. Below is an analysis based on simulation data. 
+
+<<plotsim,cache=TRUE,results='hide'>>=
+K <- 12
+
+ngene <- 5
+# prior level 2
+mualpha <- 3
+sigmaalpha <- 2
+pitau <-  0.8
+mutau <- 1
+sigmatau <- 0.25
+pibeta <- 0.8
+mubeta <- 1
+sigmabeta  <- 0.25
+data <- sim_data(K, ngene, mualpha, sigmaalpha, 
+                     pitau,mutau, sigmatau, pibeta,
+                     mubeta, sigmabeta)
+  
+  mm <- jags.model(textConnection(modelm), data[1:5],n.chains = 1)
+  resm <- coda.samples(mm, c("tau","alpha","beta",
+                             "pitau","pibeta", 
+                             "binbeta","bintau", 
+                             "sigmatau","sigmabeta"), 1000) 
+mh <- jags.model(textConnection(modelh), data[1:5] ,n.chains = 1)
+  resh <- coda.samples(mh, c("tau","alpha","beta",
+                             "sigmatauj", "sigmabetaj",  
+                             "sigmatau","sigmabeta"), 1000) 
+@
+
+Plot of posterior sample for $\tau_j$ when using point mass mixture model
+<<plottau_mm,fig.pos='H'>>=
+data$tau
+plot(resm[, paste("tau[",1:ngene,"]",sep ="")])
+@
+
+
+Plot of posterior sample for $\beta_j$ when using point mass mixture model
+<<plotbeta_mm,fig.pos='H'>>=
+data$beta
+plot(resm[, paste("beta[",1:ngene,"]",sep ="")])
+@
+
+
+
+Plot of posterior sample for $\tau_j$ when using horseshoe prior model
+<<plottau_mh,fig.pos='H'>>=
+data$tau
+plot(resh[, paste("tau[",1:ngene,"]",sep ="")])
+@
+
+
+Plot of posterior sample for $\beta_j$ when using horseshoe prior model
+<<plotbeta_mh,fig.pos='H'>>=
+data$beta
+plot(resh[, paste("beta[",1:ngene,"]",sep ="")])
+@
+
+
+\section{Analyze RFI data}
+
+As mentioned before, we only analyze 200 genes in the RNASeq - RFI data set. 
+<<realdata,cache = 1>>=
+load("data.RData")
+mm <- jags.model(textConnection(modelm), data,n.chains = 1)
+resm <- coda.samples(mm, c("tau","beta",
+                             "binbeta","bintau"), 500) 
+mm_tau_est <- which(apply(resm[[1]][,paste("bintau[", 1:200,"]",sep ="")], 2, 
+      function(x) mean(abs(1-x))) > 0.5)
+mm_tau_est  
+mm_beta_est <- which(apply(resm[[1]][,paste("binbeta[", 1:200,"]",sep ="")], 2, 
+      function(x) mean(abs(1-x))) > 0.5)
+  
+mm_beta_est
+plot(resm[,"tau[5]"])
+@
+
+
+List of genes that are differentially expressed according to the model \ref{eq1} is 
 
 \end{document}
