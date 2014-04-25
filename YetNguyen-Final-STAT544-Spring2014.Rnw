@@ -457,23 +457,41 @@ plot(resh[, paste("beta[",1:ngene,"]",sep ="")])
 
 \section{Analyze RFI data}
 
-As mentioned before, we only analyze 200 genes in the RNASeq - RFI data set. 
-<<realdata,cache = 1>>=
+As mentioned before, we only analyze 200 genes in the RNASeq - RFI data set. Below is the analysis of the data using the point mass mixture prior Poission model.
+<<realdata,cache = TRUE,results='hide'>>=
 load("data.RData")
 mm <- jags.model(textConnection(modelm), data,n.chains = 1)
-resm <- coda.samples(mm, c("tau","beta",
-                             "binbeta","bintau"), 500) 
+resm <- coda.samples(mm, c("tau","beta", "alpha", "bintau", "binbeta"), 1000) 
+@
+
+<<tidy=FALSE>>=
 mm_tau_est <- which(apply(resm[[1]][,paste("bintau[", 1:200,"]",sep ="")], 2, 
       function(x) mean(abs(1-x))) > 0.5)
-mm_tau_est  
+length(mm_tau_est)
+
 mm_beta_est <- which(apply(resm[[1]][,paste("binbeta[", 1:200,"]",sep ="")], 2, 
       function(x) mean(abs(1-x))) > 0.5)
-  
-mm_beta_est
-plot(resm[,"tau[5]"])
+length(mm_beta_est)
+
+mm_tau_est_eps <- which(apply(resm[[1]][,paste("tau[", 1:200,"]",sep ="")], 2, 
+      function(x) mean(abs(x)>0.5)) > 0.5)
+length(mm_tau_est_eps)
+
+
+mm_beta_est_eps <- which(apply(resm[[1]][,paste("beta[", 1:200,"]",sep ="")], 2, 
+      function(x) mean(abs(x)>1)) > 0.5)
+length(mm_beta_est_eps)
+mm_beta_est_eps
 @
 
 
 List of genes that are differentially expressed according to the model \ref{eq1} is 
+<<>>=
+mm_tau_est_eps
+load("data.RData")
+str(data)
+dat2 <- cbind(data$gene, data$y, data$line, data$cov)
+dat2[dat2[,1] ==142, ]
+@
 
 \end{document}
