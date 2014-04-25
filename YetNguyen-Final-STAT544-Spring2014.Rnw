@@ -98,10 +98,14 @@ P(\tau_j \mbox{ is signal }|y) = \frac {1}{M} \sum_{i=1}^M  \big(
 where $(\sigma_{\tau_j}^{2(i)}, i = 1, \dots, M)$ is the posterior MCMC sample of $\sigma_{\tau_j}^{2}$. 
 This rule is a modified threshold rule motivated from section 3.4 Thresholding in the paper "The Horseshoe Estimator for Sparse Signals" by Carlos M. Carvalho
  and Nicholas G. Polson  \url{http://ftp.stat.duke.edu/WorkingPapers/08-31.pdf}. Note that the paper use a normal setting which is different from the Poission setting of this project. 
+ 
+ Another metric to evaluate 2 models are finding posterior probability $P(|\tau_j| > \varepsilon)$ for given threshold $\varepsilon >0$. 
+ 
 \section {Model in JAGS}
 Below is the JAGS code for two models above. 
 <<modelm_pointmass_mixture, tidy=FALSE, results='hide',echo=TRUE, message=FALSE,warning=FALSE>>=
 library(rjags)
+library(xtable)
 #############modelm - using point mass mixture prior for signals###############
 modelm <- "
 model{
@@ -215,7 +219,7 @@ Next, we run a MCMC using the point mass mixture model and horseshoe prior model
 <<run_mm_simulationdata,cache=FALSE, tidy=FALSE>>=
 out <- function(K, ngene, mualpha, sigmaalpha, 
                      pitau,mutau, sigmatau, pibeta,
-                     mubeta, sigmabeta){
+                     mubeta, sigmabeta, epstau, epsbeta){
   data <- sim_data(K, ngene, mualpha, sigmaalpha, 
                      pitau,mutau, sigmatau, pibeta,
                      mubeta, sigmabeta)
@@ -224,44 +228,74 @@ out <- function(K, ngene, mualpha, sigmaalpha,
   resm <- coda.samples(mm, c("tau","alpha","beta",
                              "pitau","pibeta", 
                              "binbeta","bintau", 
-                             "sigmatau","sigmabeta"), 5000) 
+                             "sigmatau","sigmabeta"), 500) 
   
   mm_tau_est <- which(apply(resm[[1]][,paste("bintau[", 1:ngene,"]",sep ="")], 2, 
       function(x) mean(abs(1-x))) > 0.5)
+  
+  mm_tau_est_eps <- which(apply(resm[[1]][,paste("tau[", 1:ngene,"]",sep ="")], 2, 
+      function(x) mean(abs(x)>epstau)) > 0.5)
+  
   mm_tau_true <- which(data$tau!=0)
   mm_tau_correct <- sum(mm_tau_est%in%mm_tau_true)
+  mm_tau_correct_eps <- sum(mm_tau_est_eps%in%mm_tau_true)
   
   mm_beta_est <- which(apply(resm[[1]][,paste("binbeta[", 1:ngene,"]",sep ="")], 2, 
       function(x) mean(abs(1-x))) > 0.5)
+  
+  mm_beta_est_eps <- which(apply(resm[[1]][,paste("beta[", 1:ngene,"]",sep ="")], 2, 
+      function(x) mean(abs(x)>epsbeta)) > 0.5)
+  
+  
   mm_beta_true <- which(data$beta!=0)
   mm_beta_correct <- sum(mm_beta_est%in%mm_beta_true)
-  
+  mm_beta_correct_eps <- sum(mm_beta_est_eps%in%mm_beta_true)
 
   mh <- jags.model(textConnection(modelh), data[1:5] ,n.chains = 1)
   resh <- coda.samples(mh, c("tau","alpha","beta",
                              "sigmatauj", "sigmabetaj",  
-                             "sigmatau","sigmabeta"), 5000) 
+                             "sigmatau","sigmabeta"), 500) 
   
   
   mh_tau_est <- which(apply(resh[[1]][,paste("sigmatauj[", 1:ngene,"]",sep ="")], 2, 
       function(x) mean(1-1/(x^2+1))) > 0.5)
+  
+  mh_tau_est_eps <- which(apply(resh[[1]][,paste("tau[", 1:ngene,"]",sep ="")], 2, 
+      function(x) mean(abs(x)>epstau)) > 0.5)
   mh_tau_true <- which(data$tau!=0)
   mh_tau_correct <- sum(mh_tau_est%in%mh_tau_true)
+  mh_tau_correct_eps <- sum(mh_tau_est_eps%in%mh_tau_true)
   
   mh_beta_est <-which(apply(resh[[1]][,paste("sigmabetaj[", 1:ngene,"]",sep ="")], 2, 
       function(x) mean(1-1/(x^2+1))) > 0.5)
+  mh_beta_est_eps <- which(apply(resh[[1]][,paste("beta[", 1:ngene,"]",sep ="")], 2, 
+      function(x) mean(abs(x)>epsbeta)) > 0.5)
   
   mh_beta_true <- which(data$beta!=0)
   mh_beta_correct <- sum(mh_beta_est%in%mh_beta_true)
+  mh_beta_correct_eps <- sum(mh_beta_est_eps%in%mh_beta_true)
   return(c(   mm_tau_est = length(mm_tau_est), 
               mm_tau_correct_est = mm_tau_correct,
               mh_tau_est = length(mh_tau_est), 
               mh_tau_correct_est = mh_tau_correct,
+              
+              mm_tau_est_eps = length(mm_tau_est_eps), 
+              mm_tau_correct_est_eps = mm_tau_correct_eps,
+              mh_tau_est_eps = length(mh_tau_est_eps), 
+              mh_tau_correct_est_eps = mh_tau_correct_eps,
+              
               tau_true = length(mm_tau_true), 
+              
               mm_beta_est = length(mm_beta_est), 
               mm_beta_correct_est = mm_beta_correct,
               mh_beta_est = length(mh_beta_est), 
               mh_beta_correct_est = mh_beta_correct,
+              
+              mm_beta_est_eps = length(mm_beta_est_eps), 
+              mm_beta_correct_est_eps = mm_beta_correct_eps,
+              mh_beta_est_eps = length(mh_beta_est_eps), 
+              mh_beta_correct_est_eps = mh_beta_correct_eps,
+              
               beta_true = length(mm_beta_true)
               ))
 }
@@ -269,7 +303,7 @@ out <- function(K, ngene, mualpha, sigmaalpha,
 @
 
 
-<<run_sim,cache=1,message=FALSE,results='hide'>>=
+<<run_sim,cache=TRUE,message=FALSE,results='hide'>>=
 K <- 12
 
 ngene <- 100
@@ -282,12 +316,13 @@ sigmatau <- 0.25
 pibeta <- 0.8
 mubeta <- c(0.5,1,2)
 sigmabeta  <- 0.25
-post_out <- array(0, dim = c(3,3,10))
+epstau <- epsbeta <- 2*mutau/3
+post_out <- array(0, dim = c(3,3,18))
 for(i in 1:3){
   for (j in 1:3){
     post_out[i,j,] <- out(K, ngene, mualpha, sigmaalpha, 
                      pitau,mutau[i], sigmatau, pibeta,
-                     mubeta[j] , sigmabeta)
+                     mubeta[j] , sigmabeta, epstau[i], epsbeta[j])
 
   }
 }
@@ -295,18 +330,66 @@ for(i in 1:3){
 @
 Results are below, where each 
 
-<<>>=
-# 1: mm_tau_est 2: mm_tau_correct_est 3: mh_tau_est 4: mh_tau_correct_est 5: tau_true  6: mm_beta_est 7: mm_beta_correct_est 8: mh_beta_est 9: mh_beta_correct_est 10: beta_true
-post_out[1,1,]
-post_out[1,2,]
-post_out[1,3,]
-post_out[2,1,]
-post_out[2,2,]
-post_out[2,3,]
-post_out[3,1,]
-post_out[3,2,]
-post_out[3,3,]
+<<results='asis', tidy = FALSE>>=
+res <- cbind(post_out[1,1,],
+            post_out[1,2,],
+            post_out[1,3,],
+            post_out[2,1,],
+            post_out[2,2,],
+            post_out[2,3,],
+            post_out[3,1,],
+            post_out[3,2,],
+            post_out[3,3,])
+colnames(res) <- c("(0.5,0.5)", "(0.5,1)", "(0.5,2)", 
+              "(1,0.5)", "(1,1)", "(1,2)", 
+              "(2,0.5)", "(2,1)", "(2,2)")
 
+
+rownames(res) <- c("mm.est.DE.tau","mm.c.est.DE.tau",
+                    "mh.est.DE.tau","mh.c.est.DE.tau",
+                   "mm.est.DE.tau.eps","mm.c.est.DE.tau.eps",
+                   "mh.est.DE.tau.eps","mh.c.est.DE.tau.eps",
+                    "true.DE.tau", 
+                    "mm.est.DE.beta","mm.c.est.DE.beta",
+                    "mh.est.DE.beta","mh.c.est.DE.beta",
+                   "mm.est.DE.beta.eps","mm.c.est.DE.beta.eps",
+                   "mh.est.DE.beta.eps","mh.c.est.DE.beta.eps",
+                    "true.DE.beta")
+
+@
+
+
+Results of two models for estimating signal $\tau's$.
+
+<<restau,results='asis',tidy=FALSE>>=
+xtable(res[1:9,], digit = 0, caption = "The meaning of rownames: mm stands for mixture 
+       prior, mh stands for horseshoe prior.
+       mm.est.DE.tau is the  number of estimated signal tau when using pointmass 
+       mixture prior (mm).
+       mm.c.est.DE.tau is the number of correctly estimated singal taus when using
+       pointmass mixture prior.
+       mm.est.DE.tau.eps is the number of estimated signal tau when using pointmass 
+       mixture prior and the second metric (varepsilon).
+       mm.c.est.DE.tau.eps is the number of correctly estimated 
+       signal tau when using pointmass mixture prior and the second metric.
+       ")
+@
+
+
+Results of two models for estimating signal $\beta's$.
+
+<<resbeta,results='asis',tidy=FALSE>>=
+xtable(res[10:18,], digit = 0, caption = "The meaning of rownames: mm stands for mixture 
+       prior, mh stands for horseshoe prior.
+       mm.est.DE.beta is the  number of estimated signal beta when using pointmass 
+       mixture prior (mm).
+       mm.c.est.DE.beta is the number of correctly estimated singal betas when using
+       pointmass mixture prior.
+       mm.est.DE.beta.eps is the number of estimated signal beta when using pointmass 
+       mixture prior and the second metric (varepsilon).
+       mm.c.est.DE.beta.eps is the number of correctly estimated 
+       signal beta when using pointmass mixture prior and the second metric.
+       ")
 @
 
 Based on the above classification criterions,  the results show that the point mass mixture  model predict very well the signals coming from lines and covariate, and indeed it predicts better than the horseshoe prior does. When the signals are large, then the horse prior model performs well also. 
@@ -314,25 +397,25 @@ Based on the above classification criterions,  the results show that the point m
 
 Moreover, by checking the plots of posterior densitiies of $\tau_j$ and $\beta_j$, we also have the same conclusion. The next step is we will apply the two methods above in analyzing RFI data. 
 
-\section{Analyze RFI data}
-
-As mentioned before, we only analyze 200 genes in the RNASeq - RFI data set. 
-<<realdata,cache = 1>>=
-load("data.RData")
-mm <- jags.model(textConnection(modelm), data,n.chains = 1)
-resm <- coda.samples(mm, c("tau","beta",
-                             "binbeta","bintau"), 5000) 
-mm_tau_est <- which(apply(resm[[1]][,paste("bintau[", 1:200,"]",sep ="")], 2, 
-      function(x) mean(abs(1-x))) > 0.5)
-mm_tau_est  
-mm_beta_est <- which(apply(resm[[1]][,paste("binbeta[", 1:200,"]",sep ="")], 2, 
-      function(x) mean(abs(1-x))) > 0.5)
-  
-mm_beta_est
-plot(resm[,"tau[5]"])
-@
-
-
-List of genes that are differentially expressed according to the model \ref{eq1} is 
+% \section{Analyze RFI data}
+% 
+% As mentioned before, we only analyze 200 genes in the RNASeq - RFI data set. 
+% <<realdata,cache = 1>>=
+% load("data.RData")
+% mm <- jags.model(textConnection(modelm), data,n.chains = 1)
+% resm <- coda.samples(mm, c("tau","beta",
+%                              "binbeta","bintau"), 500) 
+% mm_tau_est <- which(apply(resm[[1]][,paste("bintau[", 1:200,"]",sep ="")], 2, 
+%       function(x) mean(abs(1-x))) > 0.5)
+% mm_tau_est  
+% mm_beta_est <- which(apply(resm[[1]][,paste("binbeta[", 1:200,"]",sep ="")], 2, 
+%       function(x) mean(abs(1-x))) > 0.5)
+%   
+% mm_beta_est
+% plot(resm[,"tau[5]"])
+% @
+% 
+% 
+% List of genes that are differentially expressed according to the model \ref{eq1} is 
 
 \end{document}
