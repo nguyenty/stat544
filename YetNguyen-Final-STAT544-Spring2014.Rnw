@@ -69,7 +69,7 @@ Let $y_{ijk}$ be the RNA expression level of gene $j\in \{1,\dots,J\}$ from expe
 & \sigma_\tau \sim Unif(0, 100)\notag\\
 & \sigma_\beta \sim Unif(0, 100).\notag
 \end{align}
-here $\delta_0$ is the Dirac probability at $0$. Note that the specification of $\pi_\tau \sim Beta(8, 1), \pi_\beta \sim Beta(8, 1)$ is based on Section 2.2 of the paper "An Exploration of Aspects of Bayesian Multiple Testing" by James G. Scott and James O. Berger    \url{http://www.isds.duke.edu/courses/Fall05/sta395/joelucas2.pdf} where we believe that the proportion of signals coming from lines and covariate are small (around 80\%-90\%).  
+here $\delta_0$ is the Dirac probability at $0$. Note that the specification of $\pi_\tau \sim Beta(8, 1), \pi_\beta \sim Beta(8, 1)$ is based on Section 2.2 of the paper "An Exploration of Aspects of Bayesian Multiple Testing" by JG Scott, JO Berger - Journal of Statistical Planning and Inference, 2006 - Elsevier    \url{http://www.sciencedirect.com.proxy.lib.iastate.edu/science/article/pii/S0378375805002156} where we believe that the proportion of signals coming from lines and covariate are small (around 80\%-90\%).  
 Another option for the priors of parameters can be 
 \begin{align}\label{eq2}
 & \alpha_j \sim N(0, 100^2) \notag\\
@@ -99,7 +99,7 @@ where $(\sigma_{\tau_j}^{2(i)}, i = 1, \dots, M)$ is the posterior MCMC sample o
 This rule is a modified threshold rule motivated from section 3.4 Thresholding in the paper "The Horseshoe Estimator for Sparse Signals" by Carlos M. Carvalho
  and Nicholas G. Polson  \url{http://ftp.stat.duke.edu/WorkingPapers/08-31.pdf}. Note that the paper use a normal setting which is different from the Poission setting of this project. 
  
- Another metric to evaluate 2 models are finding posterior probability 
+ Another metric to evaluate 2 models are the the following estimated posterior probability 
  \begin{equation}\label{ev2}
  P(|\tau_j| > \varepsilon) \approx \frac{1}{M}\sum_{i = 1}^M I(|\tau_j^{(i)}| > \varepsilon)
  \end{equation}
@@ -428,6 +428,12 @@ mm <- jags.model(textConnection(modelm), data,n.chains = 1)
 resm <- coda.samples(mm, c("tau","beta", "alpha", "bintau", "binbeta"), 2000) 
 @
 
+Let's look at plots of some posterior samples of $\tau_i$
+<<fig.pos='H'>>=
+plot(resm[, paste("tau[",c(1:4),"]",sep ="")])
+
+
+@
 
 Number of signal genes if we choose the evaluation rule \ref{ev1m} 
 <<tidy=FALSE>>=
@@ -439,11 +445,11 @@ length(mm_tau_est)
 
 We can see that this number of signal genes seems to be not appropriate in reality. 
 
-About the evaluation rule \ref{ev2}, we choose the threshold $\varepsilon$  to be 0.5. 
+About the evaluation rule \ref{ev2}, we choose the threshold $\varepsilon$  to be 0.3, and by using this threshold, we obtain 13 most signal genes.  
 Note that with different threshold values, we will have different set of signal genes. 
 <<tidy=FALSE>>=
 mm_tau_est_eps <- which(apply(resm[[1]][,paste("tau[", 1:200,"]",sep ="")], 2, 
-      function(x) mean(abs(x)>0.5)) > 0.5)
+      function(x) mean(abs(x)>0.3)) > 0.5)
 length(mm_tau_est_eps)
 
 @
@@ -452,14 +458,26 @@ length(mm_tau_est_eps)
 List of genes that are differentially expressed according to the model \ref{eq1} 
 and using the evaluation rule \ref{ev1m} is 
 <<tidy=FALSE,message=FALSE>>=
-mm_tau_est_eps
+mm_tau_est_eps 
 load("data.RData")
 str(data)
 library(dplyr)
 degene <- arrange(as.data.frame(cbind(data$line[data$gene ==mm_tau_est_eps[1]], 
       data$y[data$gene ==mm_tau_est_eps[1]], 
       data$y[data$gene ==mm_tau_est_eps[2]],
-      data$y[data$gene ==mm_tau_est_eps[3]])),V1)
+      data$y[data$gene ==mm_tau_est_eps[3]],
+      data$y[data$gene ==mm_tau_est_eps[4]], 
+      data$y[data$gene ==mm_tau_est_eps[5]],
+      data$y[data$gene ==mm_tau_est_eps[6]],
+      data$y[data$gene ==mm_tau_est_eps[7]], 
+      data$y[data$gene ==mm_tau_est_eps[8]],
+      data$y[data$gene ==mm_tau_est_eps[9]],
+      data$y[data$gene ==mm_tau_est_eps[10]], 
+      data$y[data$gene ==mm_tau_est_eps[11]],
+      data$y[data$gene ==mm_tau_est_eps[12]],
+      data$y[data$gene ==mm_tau_est_eps[13]])),V1)
+
+
 colnames(degene) <- c("line", paste("gene",mm_tau_est_eps,sep = ""))
 degene
 @
@@ -468,9 +486,12 @@ degene
 In this project, we develop a full Bayesian model to analyzing RNASeq data. We consider two different prior specification. The first one is point mass mixture prior on the difference of expression data between two lines. The second ons is 
 the horsehoe prior. We conduct a simulation study to evaluate the efficiency 
 of these two specifications in prediting the true differences between two lines. 
-The result turns out that under the point mass mixture prior model -based generated data, the mixture prior model outperforms the horseshoe prior. 
-Finally, we adopt the point mass mixture prior model to analyze the RNASeq data and obtain a list of differential expressed genes (3 genes). Note that the full RNASeq data consists of about 14000 genes, and it takes about 8 hours to run MCMC posterior samples on my computer, also the data file of posterior samples 
+The result turns out that under the point mass mixture prior model-based generated data, the mixture prior model outperforms the horseshoe prior. 
+Finally, we adopt the point mass mixture prior model to analyze the RNASeq data and obtain a list of differential expressed genes (3 genes). Furthermore, the full RNASeq data consists of about 14000 genes, and it takes about 8 hours to run MCMC posterior samples on my computer, also the data file of posterior samples 
 for the parameter ($\tau_j, \alpha_j, \beta_j$) is about 6GB, which is very big. 
+One important point to note is that the  number of resulting differential expression genes (signal genes) will depend on the threshold value $\varepsilon$. Therefore, more work needs to be done to account for the false discovery rate
+when changing the threshold value $\varepsilon$.
 
+ 
 
 \end{document}
