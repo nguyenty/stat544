@@ -56,7 +56,7 @@ covariate RFI.
 
 \section{Model}
 
-Let $y_{ijk}$ be the RNA expression level of gene $j\in \{1,\dots,J\}$ from experimential unit $k \in \{1, \dots, 12\}$ in group $i \in \{1,2\}$. Let $x_{ik}$ be the RFI value corresponding to the the experimential unit $k$ in group $i$. Suppose the count data for each gene have a Poisson distribution (or Negative Binomial distribution), with the log link function of the mean as a linear function of group effect and covariate effects. In particular, 
+Let $y_{ijk}$ be the RNA expression level of gene $j\in \{1,\dots,J\}$ from experimential unit $k \in \{1, \dots, 12\}$ in group $i \in \{1,2\}$. Let $x_{ik}$ be the RFI value corresponding to the the experimential unit $k$ in group $i$. Suppose the count data for each gene have a Poisson distribution  with the log link function of the mean as a linear function of group effect and covariate effects. In particular, 
 \begin{align}\label{eq1}
 & y_{ijk} \sim Poisson(\lambda_{ijk} )\notag\\
 & log(\lambda_{ijk}) = \alpha_j + (-1)^{i}\tau_j + \beta_j x_{ik}\notag\\
@@ -392,7 +392,7 @@ plot(resm[, paste("tau[",1:ngene,"]",sep ="")])
 
 Below is the dianogstic plots acf of the posterior samples
 <<acf,fig.pos='H'>>=
-par(mfrow = c(2,3))
+par(mfrow = c(3,2))
 acf(resm[[1]][,"tau[1]"], main = "tau1")
 acf(resm[[1]][,"tau[2]"], main = "tau2")
 acf(resm[[1]][,"tau[3]"], main = "tau3")
@@ -408,6 +408,15 @@ data$tau
 plot(resh[, paste("tau[",1:ngene,"]",sep ="")])
 @
 
+Below is the dianogstic plots acf of the posterior samples
+<<acfh,fig.pos='H'>>=
+par(mfrow = c(3,2))
+acf(resh[[1]][,"tau[1]"], main = "tau1")
+acf(resh[[1]][,"tau[2]"], main = "tau2")
+acf(resh[[1]][,"tau[3]"], main = "tau3")
+acf(resh[[1]][,"tau[4]"], main = "tau4")
+acf(resh[[1]][,"tau[5]"], main = "tau5")
+@
 
 
 \section{Analyze RFI data}
@@ -416,7 +425,7 @@ As mentioned before, we only analyze 200 genes in the RNASeq - RFI data set. Bel
 <<realdata,cache = TRUE,results='hide'>>=
 load("data.RData")
 mm <- jags.model(textConnection(modelm), data,n.chains = 1)
-resm <- coda.samples(mm, c("tau","beta", "alpha", "bintau", "binbeta"), 1000) 
+resm <- coda.samples(mm, c("tau","beta", "alpha", "bintau", "binbeta"), 2000) 
 @
 
 
@@ -447,15 +456,21 @@ mm_tau_est_eps
 load("data.RData")
 str(data)
 library(dplyr)
-arrange(as.data.frame(cbind(data$line[data$gene ==mm_tau_est_eps[1]], 
+degene <- arrange(as.data.frame(cbind(data$line[data$gene ==mm_tau_est_eps[1]], 
       data$y[data$gene ==mm_tau_est_eps[1]], 
       data$y[data$gene ==mm_tau_est_eps[2]],
       data$y[data$gene ==mm_tau_est_eps[3]])),V1)
+colnames(degene) <- c("line", paste("gene",mm_tau_est_eps,sep = ""))
+degene
 @
+\section{Conclusion}
 
-<<echo=FALSE>>=
-# dat2 <- data.frame(gene = data$gene, y= data$y, line = data$line, cov= data$cov)
-# library(ggplot2)
-# ggplot(data = dat2[dat2[,1] ==142, ], aes(x = cov, y = log(y+1), colour = as.factor(line))) + geom_line()
-@
+In this project, we develop a full Bayesian model to analyzing RNASeq data. We consider two different prior specification. The first one is point mass mixture prior on the difference of expression data between two lines. The second ons is 
+the horsehoe prior. We conduct a simulation study to evaluate the efficiency 
+of these two specifications in prediting the true differences between two lines. 
+The result turns out that under the point mass mixture prior model -based generated data, the mixture prior model outperforms the horseshoe prior. 
+Finally, we adopt the point mass mixture prior model to analyze the RNASeq data and obtain a list of differential expressed genes (3 genes). Note that the full RNASeq data consists of about 14000 genes, and it takes about 8 hours to run MCMC posterior samples on my computer, also the data file of posterior samples 
+for the parameter ($\tau_j, \alpha_j, \beta_j$) is about 6GB, which is very big. 
+
+
 \end{document}
