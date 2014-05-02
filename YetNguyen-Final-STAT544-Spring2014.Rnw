@@ -46,17 +46,17 @@ set.seed(20140423)
 
 \section{Description of the data}
 
-The data I am going to work on is RNA-Seq data from RFI (Residual Feed Intake) project
-from animal science research group. The data has an integer count table about ten thousand rows and 24 columns, and a RFI covariate. Each column is an experimental unit. Those 24 experimental 
+The data we will analyze is RNA-Seq data from RFI (Residual Feed Intake) project
+from animal science research group. The data consists of a count table with ten thousand rows and 24 columns, and a RFI covariate. Each column is an experimental unit. Those 24 experimental 
 units are in one of the two lines: half of them is in HRFI (High Residual Feed Intake) line,
 the other half is LRFI (Low Residual Feed Intake) line, denoted as line 1, and 2, correspondingly. The RFI value is the 
-associated continuous covariate with each experimental unit. I want to know which 
+associated continuous covariate with each experimental unit. We want to know which 
 genes are differentially expressed between two lines in the presence of the associated 
 covariate RFI. 
 
 \section{Model}
 
-Let $y_{ijk}$ be the RNA expression level of gene $j\in \{1,\dots,J\}$ from experimential unit $k \in \{1, \dots, 12\}$ in group $i \in \{1,2\}$. Let $x_{ik}$ be the RFI value corresponding to the the experimential unit $k$ in group $i$. Suppose the count data for each gene have a Poisson distribution  with the log link function of the mean as a linear function of group effect and covariate effects. In particular, 
+Let $y_{ijk}$ be the RNA expression level of gene $j\in \{1,\dots,J\}$ from experimential unit $k \in \{1, \dots, 12\}$ in group $i \in \{1,2\}$. Let $x_{ik}$ be the RFI value corresponding to the experimential unit $k$ in group $i$. Suppose the count data for each gene have a Poisson distribution  with the log link function of the mean as a linear combination of line effect and RFI covariate effects. In particular, 
 \begin{align}\label{eq1}
 & y_{ijk} \sim Poisson(\lambda_{ijk} )\notag\\
 & log(\lambda_{ijk}) = \alpha_j + (-1)^{i}\tau_j + \beta_j x_{ik}\notag\\
@@ -69,10 +69,10 @@ Let $y_{ijk}$ be the RNA expression level of gene $j\in \{1,\dots,J\}$ from expe
 & \sigma_\tau \sim Unif(0, 100)\notag\\
 & \sigma_\beta \sim Unif(0, 100).\notag
 \end{align}
-here $\delta_0$ is the Dirac probability at $0$. Note that the specification of $\pi_\tau \sim Beta(8, 1), \pi_\beta \sim Beta(8, 1)$ is based on Section 2.2 of the paper "An Exploration of Aspects of Bayesian Multiple Testing" by JG Scott, JO Berger - Journal of Statistical Planning and Inference, 2006 - Elsevier    \url{http://www.sciencedirect.com.proxy.lib.iastate.edu/science/article/pii/S0378375805002156} where we believe that the proportion of signals coming from lines and covariate are small (around 80\%-90\%).  
-Another option for the priors of parameters can be 
+here $\delta_0$ is the Dirac probability at $0$. Note that the specification of $\pi_\tau \sim Beta(8, 1), \pi_\beta \sim Beta(8, 1)$ is based on Section 2.2 of the paper "An Exploration of Aspects of Bayesian Multiple Testing" by JG Scott, JO Berger - Journal of Statistical Planning and Inference, 2006 - Elsevier    \url{http://www.sciencedirect.com.proxy.lib.iastate.edu/science/article/pii/S0378375805002156} where we \textit{believe} that the proportion of signals differentiating lines and covariate are small (around 5\%-20\%).  
+Another option for the priors of parameters $\tau_j$ and $\beta_j$ can be 
+horseshoe prior
 \begin{align}\label{eq2}
-& \alpha_j \sim N(0, 100^2) \notag\\
 & \tau_j \sim N(0, \sigma^2_{\tau_j}) \notag\\
 & \sigma_{\tau_j} \sim Ca^+ (0, \sigma_\tau) \notag\\
 & \sigma_\tau \sim Ca^+(0,1)\\
@@ -81,32 +81,42 @@ Another option for the priors of parameters can be
 & \sigma_\beta \sim Ca^+(0,1)\notag.
 \end{align}
 
-At the end, the inference goal is to find $P(\tau_j \mbox{ is signal} |y)$. If $P(\tau_j \mbox{ is signal }|y) >0.5$, then the gene $j$ is signal, i.e., differentially expressed.
+At the end, the inference goal is to estimate the posterior probability of signals (differential expression) $P(\tau_j \mbox{ is signal} |y)$. If $P(\tau_j \mbox{ is signal }|y) >0.5$, then the gene $j$ is called \textit{signal}, i.e., differentially expressed.
 
-In particular, for the model with point mass mixture prior \ref{eq1}, we estimate the posterior probability of signal of gene $j$ by 
+We propose two metrices to estimate the posterior probability of signals.
+\begin{itemize}
+\item Metric 1: We estimate the posterior probability of signal of gene $j$ 
+for point mass mixture prior model (\ref{eq1}) by
 \begin{equation}\label{ev1m}
 P(\tau_j \mbox{ is signal }|y) = P(|\tau_j| >0 | y) \approx 
 \frac {1}{M} \sum_{i=1}^M I(\pi_{\tau_j}^{(i)} = 0)
 \end{equation}
 where $(\pi_{\tau_j}^{(i)}, i = 1, \dots, M)$ is the posterior MCMC sample of $\pi_{\tau_j}$. 
 
-On the other hand, for the model with horseshoe prior \ref{eq2}, we estimate the posterior probability of signal of gene $j$ by 
+On the other hand,  we estimate the posterior probability of signal of gene $j$  for the horseshoe prior model (\ref{eq2}) by 
 \begin{equation}\label{ev1h}
-P(\tau_j \mbox{ is signal }|y) = \frac {1}{M} \sum_{i=1}^M  \big(
+P(\tau_j \mbox{ is signal }|y) \approx \frac {1}{M} \sum_{i=1}^M  \big(
 1 - \frac{1}{1+\sigma_{\tau_j}^{2(i)}} \big)
 \end{equation}
 where $(\sigma_{\tau_j}^{2(i)}, i = 1, \dots, M)$ is the posterior MCMC sample of $\sigma_{\tau_j}^{2}$. 
-This rule is a modified threshold rule motivated from section 3.4 Thresholding in the paper "The Horseshoe Estimator for Sparse Signals" by Carlos M. Carvalho
- and Nicholas G. Polson  \url{http://ftp.stat.duke.edu/WorkingPapers/08-31.pdf}. Note that the paper use a normal setting which is different from the Poission setting of this project. 
+
+This metric rule is a modified threshold rule motivated from section 3.4 Thresholding in the paper "The Horseshoe Estimator for Sparse Signals" by Carlos M. Carvalho and Nicholas G. Polson, Biometrika (2010), 97 ,2, pp. 465–480  \url{http://biomet.oxfordjournals.org/content/97/2/465.full.pdf}. Note that the paper use the normal distribution setting which is different from the Poission
+distribution setting of this project. 
  
- Another metric to evaluate 2 models are the the following estimated posterior probability 
+\item Metric 2: We  estimate the posterior probability of signal of gene $j$ for both models (\ref{eq1}) and (\ref{eq2}) by
  \begin{equation}\label{ev2}
  P(|\tau_j| > \varepsilon) \approx \frac{1}{M}\sum_{i = 1}^M I(|\tau_j^{(i)}| > \varepsilon)
  \end{equation}
  
  for given threshold $\varepsilon >0$.
  
- 
+ \end{itemize}
+
+We will use these two metrics to evaluate performance of detecting signals 
+in simulated dataset. Based on the simulation results, we will pick up the 
+better model to analyze RFI data. For the purpose of this project, we will 
+analyze first 200 genes of the original RNA-Seq dataset.
+
 \section {Model in JAGS}
 Below is the JAGS code for two models above. 
 <<modelm_pointmass_mixture, tidy=FALSE, results='hide',echo=TRUE, message=FALSE,warning=FALSE>>=
