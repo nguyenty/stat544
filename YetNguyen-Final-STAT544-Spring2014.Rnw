@@ -10,6 +10,7 @@
 \usepackage{verbatim}
 \usepackage{color}
 \usepackage{pstricks}
+\usepackage{caption}
 % \usepackage{longtable}
 % \usepackage{fancyvrb}
 % \usepackage{fancyhdr}
@@ -180,17 +181,17 @@ sigmabeta ~ dt(0, 1, 1) T(0,)
 
 We simulate data to evaluate the performance of the two models in detecting true signals. For simplicity, 
 we simulate a count table with dimension $100\times 24$ where each row corresponding to 
-one gene, first 12 columns coresponding to line 1, the next 12 colums corresponding to 
+one gene, first 12 columns corresponding to line 1, the next 12 colums corresponding to 
 line 2. Also, we simulate 24 covariates $x_{k} \sim N(0,1)$ for $k = 1,\dots, 24$. The $(j,k)-$ element of the count table is simulated from $Poisson(\lambda_{jk})$ distribution, where 
-\begin{align*}
-\lambda_{jk} &= \alpha_j -\tau_j + \beta_j x_{k} ,\quad \mbox{for }\quad k = 1,\dots, 12\\
-\lambda_{jk} &= \alpha_j +\tau_j + \beta_j x_{k} ,\quad \mbox{for }\quad k = 13,\dots, 24\\
-\alpha_j     & \sim N(3,2^2) \quad \mbox{for}\quad j = 1,\dots, 50\\
-\tau_j       &= (1-Bern(0.8))*N(\mu_\tau,0.25^2) \quad \mu_\tau \in \{0.5, 1, 2\} \\
-\beta_j      &=  (1-Bern(0.8))*N(\mu_\beta,0.25^2) \quad \mu_\beta \in \{0.5, 1, 2\}.
-\end{align*}
+\begin{align}
+\lambda_{jk} &= \alpha_j -\tau_j + \beta_j x_{k} ,\quad \mbox{for }\quad k = 1,\dots, 12\notag\\
+\lambda_{jk} &= \alpha_j +\tau_j + \beta_j x_{k} ,\quad \mbox{for }\quad k = 13,\dots, 24 \notag\\
+\alpha_j     & \sim N(3,2^2) \quad \mbox{for}\quad j = 1,\dots, 50 \label{sim}\\
+\tau_j       &= (1-Bern(0.8))*N(\mu_\tau,0.25^2) \quad \mu_\tau \in \{0.5, 1, 2\} \notag\\
+\beta_j      &=  (1-Bern(0.8))*N(\mu_\beta,0.25^2) \quad \mu_\beta \in \{0.5, 1, 2\}\notag.
+\end{align}
 In summary, we have total $3\times 3 = 9$ different simulation scenarios. Each simulation scenario 
-coresponds to one pairs of value 
+corresponds to one pairs of value 
 $$
 (\mu_\tau, \mu_\beta) \in \{(0.5, 0.5), (0.5, 1), (0.5, 2), (1, 0.5), (1, 1), (1, 2), (2, 0.5), (2, 1), (2, 2) \}.
 $$
@@ -239,7 +240,7 @@ sim_data <- function(K, ngene, mualpha, sigmaalpha,
 For each simulation scenario, we simultaneously run a MCMC  for the model (\ref{eq1}) which is the point mass mixture prior model and the model (\ref{eq2}) which is the horseshoe prior model. Then, we calculate the estimated posterior probability of 
 signal of $\tau_j$ for each $j$ based on two different evaluation metrices 
 introduced in Section 2. In particular, with respect to metric 2, we use threshold $\varepsilon = 2\mu_\tau/3$ where $\mu_\tau$ is the corresponding 
-$\mu_\tau$ of the simulation scenario. 
+$\mu_\tau$ of the simulation scenario. The ability to detect true signals of each model with specific metric is summarized in Table \ref{simtable}.
 
 \begin{table}[ht]
 \centering
@@ -255,14 +256,16 @@ $\mu_\tau$ of the simulation scenario.
 % mm.c.est.DE.tau.eps & 14 & 14 & 15 & 23 & 23 & 20 & 19 & 15 & 17 \\
 (\ref{eq2})(\ref{ev1m}) & 12(12) & 12(12) & 14(14) & 21(21) & 23(23) & 20(20) & 19(19) & 15(15) & 17(17) \\
 % mh.c.est.DE.tau.eps & 12 & 12 & 14 & 21 & 23 & 20 & 19 & 15 & 17 \\
-signals & 20 & 22 & 22 & 26 & 27 & 25 & 19 & 16 & 17 \\
+true signals & 20 & 22 & 22 & 26 & 27 & 25 & 19 & 16 & 17 \\
 \hline
 \end{tabular}
 \caption{Results of detecting signals of two models (\ref{eq1}) and (\ref{eq2})
-in 9 simulation scenarios. The explanation of the table as below. Each column name is the value of $(\mu_\tau, \mu_\beta)$. Each rowname is specification of model and metric. Each element of the table indicate the number of detected signals and the number of correctly detected signals.  For example the first row "(\ref{eq1})(\ref{ev1m})" indicates model $(\ref{eq1})$ and metric $\ref{ev1m}$. The element at first row "(\ref{eq1})(\ref{ev1m})" and first column of table "19(16)" indicate the 
+in 9 simulation scenarios. 
 }
+\label{simtable}
 \end{table}
 
+The explanation of the Table \ref{simtable} is as below. Each column  is  one simulation scenario corresponding to the value of $(\mu_\tau, \mu_\beta)$. Each row is the specification of  the model and metric. Each element of the table indicates the number of detected signals and the number of correctly detected signals by the model and metric specified by its row name.  For example, the element 19(16) at the first row "(\ref{eq1})(\ref{ev1m})" and the first column "(0.5, 0.5)" means that: for the simulation scenario (\ref{sim}),  model $(\ref{eq1})$ with metric $\ref{ev1m}$ detects 19 signals, 16 signals of which are correct signals, and there is total 20 true signals (the number at the last row in the first column). 
 
 <<run_mm_simulationdata,cache=TRUE, tidy=FALSE,echo=FALSE>>=
 out <- function(K, ngene, mualpha, sigmaalpha, 
@@ -377,8 +380,8 @@ for(i in 1:3){
 % print(xtable(adf.results, caption = "xx $\\alpha_1$"),sanitize.text.function=function(x){x})
 % @
 
-Results of two models for estimating signal $\tau's$.
-<<restau2>>=
+%Results of two models for estimating signal $\tau's$.
+<<restau2, results='hide',echo=FALSE>>=
 library(xtable)
 res <- cbind(post_out[1,1,],
             post_out[1,2,],
@@ -416,7 +419,7 @@ print(xtable(res, digit = 0, caption = "The meaning of rownames: mm stands for m
        "),sanitize.text.function=function(x){x})
 @
 
-<<restau,results='asis'>>=
+<<restau,results='hide',echo=FALSE>>=
 library(xtable)
 res <- cbind(post_out[1,1,],
             post_out[1,2,],
@@ -455,16 +458,14 @@ print(xtable(res, digit = 0, caption = "The meaning of rownames: mm stands for m
 @
 
 
-Based on the above classification criterions,  the results show that the point mass mixture  model predict very well the signals coming from lines and covariate, and indeed it predicts better than the horseshoe prior does. When the signals are large, then the horse prior model performs well also. 
-
-
-
-Moreover, by checking the plots of posterior densitiies of $\tau_j$, we also have the same conclusion. Below is  the plots obtained from an analysis based on a simulation data. 
+Table \ref{simtable} shows that the point mass mixture prior  model (\ref{eq1}) predicts very well the true signals between two lines, and indeed it predicts better than the horseshoe prior model (\ref{eq2}) does. However, when the signals are large, the horseshoe prior model (\ref{eq2}) performs well also. 
+Furthermore, by checking the plots of posterior densitiies of $\tau_j$, we also have the same conclusion. The Figures \ref{fig:plottau_mm}, \ref{fig:acf},
+\ref{fig:plottau_mh}, \ref{fig:acfh} Below is the plots obtained from an analysis based on a simulation scenario (\ref{sim})  with $(\mu_\tau, \mu_\beta) = (1,1)$ and  4 genes $j = 1,\dots, 4$, the simulated parameters $\tau_3 = 1.49$, and $\tau_j =0$ for all $j=1,2,4$. 
 
 <<plotsim,cache=TRUE,results='hide',echo=FALSE>>=
 K <- 12
 
-ngene <- 5
+ngene <- 4
 # prior level 2
 mualpha <- 3
 sigmaalpha <- 2
@@ -489,40 +490,35 @@ mh <- jags.model(textConnection(modelh), data[1:5] ,n.chains = 1)
                              "sigmatau","sigmabeta"), 2000) 
 @
 
-Plot of posterior sample for $\tau_j$ when using point mass mixture model
-<<plottau_mm,fig.pos='H',echo=FALSE>>=
-data$tau
-plot(resm[, paste("tau[",1:ngene,"]",sep ="")])
+
+<<plottau_mm,echo=FALSE,fig.align='center',fig.cap='Posterior samples of $\\tau_j, j = 1,\\dots, 4$ for the point mass mixture prior model (\\ref{eq1}).',fig.pos='H'>>=
+plot(resm[, paste("tau[",1:4,"]",sep ="")])
 @
 
-Below is the dianogstic plots acf of the posterior samples
-<<acf,fig.pos='H',echo=FALSE>>=
-par(mfrow = c(3,2))
+<<acf,echo=FALSE,fig.cap='The dianogstic plots acf of the posterior MCMC samples of $\\tau_j, j =1,\\dots,4$ under the point mass mixture prior model (\\ref{eq1}).',fig.pos='H'>>=
+par(mfrow = c(2,2))
 acf(resm[[1]][,"tau[1]"], main = "tau1")
 acf(resm[[1]][,"tau[2]"], main = "tau2")
 acf(resm[[1]][,"tau[3]"], main = "tau3")
 acf(resm[[1]][,"tau[4]"], main = "tau4")
-acf(resm[[1]][,"tau[5]"], main = "tau5")
 @
 
 
 
-Plot of posterior sample for $\tau_j$ when using horseshoe prior model
-<<plottau_mh,fig.pos='H',echo=FALSE>>=
-data$tau
+
+<<plottau_mh,echo=FALSE,fig.cap='Posterior samples of $\\tau_j, j = 1,\\dots, 4$ for the horseshoe prior model (\\ref{eq2}).',fig.pos='H'>>=
+#data$tau
 plot(resh[, paste("tau[",1:ngene,"]",sep ="")])
 @
 
-Below is the dianogstic plots acf of the posterior samples
-<<acfh,fig.pos='H',echo=FALSE>>=
-par(mfrow = c(3,2))
+<<acfh,fig.cap='The dianogstic plots acf of the posterior MCMC samples of $\\tau_j, j =1,\\dots,4$ under the horseshoe prior model (\\ref{eq2}).',echo=FALSE,fig.pos='H'>>=
+par(mfrow = c(2,2))
 acf(resh[[1]][,"tau[1]"], main = "tau1")
 acf(resh[[1]][,"tau[2]"], main = "tau2")
 acf(resh[[1]][,"tau[3]"], main = "tau3")
 acf(resh[[1]][,"tau[4]"], main = "tau4")
-acf(resh[[1]][,"tau[5]"], main = "tau5")
-@
 
+@
 
 \section{Analyze RFI data}
 
@@ -533,8 +529,7 @@ mm <- jags.model(textConnection(modelm), data,n.chains = 1)
 resm <- coda.samples(mm, c("tau","beta", "alpha", "bintau", "binbeta"), 2000) 
 @
 
-Let's look at plots of some posterior samples of $\tau_i$
-<<fig.pos='H',echo=FALSE>>=
+<<echo=FALSE,fig.cap='Posterior samples of $\\tau_j, j = 1,\\dots, 4$ for the real data RNA-Seq under the point mass mixture prior model (\\ref{eq1}).'>>=
 plot(resm[, paste("tau[",c(1:4),"]",sep ="")])
 
 
@@ -562,7 +557,7 @@ length(mm_tau_est_eps)
 
 List of genes that are differentially expressed according to the model \ref{eq1} 
 and using the evaluation rule \ref{ev1m} is 
-<<tidy=FALSE,message=FALSE>>=
+<<tidy=FALSE,message=FALSE,echo=FALSE,results='hide'>>=
 mm_tau_est_eps 
 load("data.RData")
 str(data)
@@ -597,6 +592,5 @@ for the parameter ($\tau_j, \alpha_j, \beta_j$) is about 6GB, which is very big.
 One important point to note is that the  number of resulting differential expression genes (signal genes) will depend on the threshold value $\varepsilon$. Therefore, more work needs to be done to account for the false discovery rate
 when changing the threshold value $\varepsilon$.
 
- 
 
 \end{document}
