@@ -1,8 +1,9 @@
 
-\documentclass[10pt]{article}
+\documentclass[12pt]{article}
 % \usepackage[sc]{mathpazo}
 % \usepackage[T1]{fontenc}
 \usepackage{geometry}
+\usepackage[toc,page]{appendix}
 \usepackage{amsmath, amssymb, mathtools }
 \usepackage{enumerate}
 \usepackage{array}
@@ -19,9 +20,9 @@
 \usepackage{psfrag}
 \usepackage{epsfig,epsf}
 \usepackage{pstricks}
-% \geometry{verbose,tmargin=2.5cm,bmargin=2.5cm,lmargin=2.5cm,rmargin=2.5cm}
-% \setcounter{secnumdepth}{2}
-% \setcounter{tocdepth}{2}
+\geometry{verbose,tmargin=2.5cm,bmargin=2.5cm,lmargin=2.5cm,rmargin=2.5cm}
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{2}
 \usepackage{url}
 \usepackage[unicode=true,pdfusetitle,
             bookmarks=true,bookmarksnumbered=true,bookmarksopen=true,bookmarksopenlevel=2,
@@ -45,10 +46,10 @@ set.seed(20140423)
 
 \maketitle
 
-\section{Description of the data}
+\section{Introduction}
 
-The data we will analyze is RNA-Seq data from RFI (Residual Feed Intake) project
-from animal science research group. The data consists of a count table with ten thousand rows and 24 columns, and a RFI covariate. Each column is an experimental unit. Those 24 experimental 
+In this project, we will analyze  RNA-Seq data from RFI (Residual Feed Intake) project
+from ISU animal science research group. The data consists of a count table with ten thousand rows and 24 columns, and a RFI covariate. Each column is an experimental unit. Those 24 experimental 
 units are in one of the two lines: half of them is in HRFI (High Residual Feed Intake) line,
 the other half is LRFI (Low Residual Feed Intake) line, denoted as line 1, and 2, correspondingly. The RFI value is the 
 associated continuous covariate with each experimental unit. We want to know which 
@@ -70,7 +71,7 @@ Let $y_{ijk}$ be the RNA expression level of gene $j\in \{1,\dots,J\}$ from expe
 & \sigma_\tau \sim Unif(0, 100)\notag\\
 & \sigma_\beta \sim Unif(0, 100).\notag
 \end{align}
-here $\delta_0$ is the Dirac probability at $0$. Note that the specification of $\pi_\tau \sim Beta(8, 1), \pi_\beta \sim Beta(8, 1)$ is based on Section 2.2 of the paper "An Exploration of Aspects of Bayesian Multiple Testing" by JG Scott, JO Berger - Journal of Statistical Planning and Inference, 2006 - Elsevier    \url{http://www.sciencedirect.com.proxy.lib.iastate.edu/science/article/pii/S0378375805002156} where we \textit{believe} that the proportion of signals differentiating lines and covariate are small (around 5\%-20\%).  
+here $\delta_0$ is the Dirac probability at $0$. Note that the specification of $\pi_\tau \sim Beta(8, 1), \pi_\beta \sim Beta(8, 1)$ is based on Section 2.2 of the paper "An Exploration of Aspects of Bayesian Multiple Testing" by JG Scott, JO Berger - Journal of Statistical Planning and Inference, 2006 - Elsevier     where we \textit{believe} that the proportion of signals differentiating lines and covariate are small (around 1\%-20\%).  
 Another option for the priors of parameters $\tau_j$ and $\beta_j$ can be 
 horseshoe prior
 \begin{align}\label{eq2}
@@ -101,7 +102,7 @@ P(\tau_j \mbox{ is signal }|y) \approx \frac {1}{M} \sum_{i=1}^M  \big(
 \end{equation}
 where $(\sigma_{\tau_j}^{2(i)}, i = 1, \dots, M)$ is the posterior MCMC sample of $\sigma_{\tau_j}^{2}$. 
 
-This metric rule is a modified threshold rule motivated from section 3.4 Thresholding in the paper "The Horseshoe Estimator for Sparse Signals" by Carlos M. Carvalho and Nicholas G. Polson, Biometrika (2010), 97 ,2, pp. 465–480  \url{http://ejournals.ebsco.com.proxy.lib.iastate.edu/Direct.asp?AccessToken=95M5JIX8XM9EEE91IJKU1JMX5I1D8DM4Q&Show=Object}. Note that the paper use the normal distribution setting which is different from the Poission
+This metric rule is a modified threshold rule motivated from section 3.4 Thresholding in the paper "The Horseshoe Estimator for Sparse Signals" by Carlos M. Carvalho and Nicholas G. Polson, Biometrika (2010), 97 ,2, pp. 465–480. Note that the paper use the normal distribution setting which is different from the Poission
 distribution setting of this project. 
  
 \item Metric 2: We  estimate the posterior probability of signal of gene $j$ for both models (\ref{eq1}) and (\ref{eq2}) by
@@ -460,7 +461,7 @@ print(xtable(res, digit = 0, caption = "The meaning of rownames: mm stands for m
 
 Table \ref{simtable} shows that the point mass mixture prior  model (\ref{eq1}) predicts very well the true signals between two lines, and indeed it predicts better than the horseshoe prior model (\ref{eq2}) does. However, when the signals are large, the horseshoe prior model (\ref{eq2}) performs well also. 
 Furthermore, by checking the plots of posterior densitiies of $\tau_j$, we also have the same conclusion. The Figures \ref{fig:plottau_mm}, \ref{fig:acf},
-\ref{fig:plottau_mh}, \ref{fig:acfh} Below is the plots obtained from an analysis based on a simulation scenario (\ref{sim})  with $(\mu_\tau, \mu_\beta) = (1,1)$ and  4 genes $j = 1,\dots, 4$, the simulated parameters $\tau_3 = 1.49$, and $\tau_j =0$ for all $j=1,2,4$. 
+\ref{fig:plottau_mh}, \ref{fig:acfh} are the plots obtained from an analysis based on a simulation scenario (\ref{sim})  with $(\mu_\tau, \mu_\beta) = (1,1)$ and  4 genes $j = 1,\dots, 4$, the simulated parameters $\tau_3 = 1.49$, and $\tau_j =0$ for all $j=1,2,4$. 
 
 <<plotsim,cache=TRUE,results='hide',echo=FALSE>>=
 K <- 12
@@ -522,7 +523,8 @@ acf(resh[[1]][,"tau[4]"], main = "tau4")
 
 \section{Analyze RFI data}
 
-As mentioned before, we only analyze 200 genes in the RNASeq - RFI data set. Below is the analysis of the data using the point mass mixture prior Poission model.
+As mentioned above, we only analyze 200 genes in the RNASeq - RFI data set for the simplicity. Based on the simulation results, we will use the point mass mixture prior Poission model (\ref{eq1}) with two metrics \eqref{ev1m} and \eqref{ev2} to see how they perform in analyzing this real dataset. As it turns out, the model \eqref{eq1} with metric \eqref{ev1m} gives 184 signals which is a very high number and is not appropriate in reality that we \textit{believe} the signals are sparse. On the other hand, the model \eqref{eq1} with metric \eqref{ev2} and $\varepsilon = 0.5$ gives 3 signals
+
 <<realdata,cache = TRUE,results='hide',echo=FALSE>>=
 load("data.RData")
 mm <- jags.model(textConnection(modelm), data,n.chains = 1)
@@ -535,62 +537,76 @@ plot(resm[, paste("tau[",c(1:4),"]",sep ="")])
 
 @
 
-Number of signal genes if we choose the evaluation rule \ref{ev1m} 
-<<tidy=FALSE,echo=FALSE>>=
+
+
+<<acfrna,fig.cap='The dianogstic plots acf of the posterior MCMC samples of $\\tau_j, j =1,\\dots,4$ for the real RNA-Seq data under the point mass mixture prior model (\\ref{eq1}).',echo=FALSE,fig.pos='H'>>=
+par(mfrow = c(2,2))
+acf(resm[[1]][,"tau[1]"], main = "tau1")
+acf(resm[[1]][,"tau[2]"], main = "tau2")
+acf(resm[[1]][,"tau[3]"], main = "tau3")
+acf(resm[[1]][,"tau[4]"], main = "tau4")
+
+@
+
+
+<<tidy=FALSE,echo=FALSE,results='hide'>>=
 mm_tau_est <- which(apply(resm[[1]][,paste("bintau[", 1:200,"]",sep ="")], 2, 
       function(x) mean(abs(1-x))) > 0.5)
 length(mm_tau_est)
 
 @
 
-We can see that this number of signal genes seems to be not appropriate in reality. 
-
-About the evaluation rule \ref{ev2}, we choose the threshold $\varepsilon$  to be 0.3, and by using this threshold, we obtain 13 most signal genes.  
-Note that with different threshold values, we will have different set of signal genes. 
-<<tidy=FALSE>>=
+<<tidy=FALSE,results='hide',echo=FALSE>>=
 mm_tau_est_eps <- which(apply(resm[[1]][,paste("tau[", 1:200,"]",sep ="")], 2, 
-      function(x) mean(abs(x)>0.3)) > 0.5)
+      function(x) mean(abs(x)>0.5)) > 0.5)
 length(mm_tau_est_eps)
 
 @
 
 
-List of genes that are differentially expressed according to the model \ref{eq1} 
-and using the evaluation rule \ref{ev1m} is 
-<<tidy=FALSE,message=FALSE,echo=FALSE,results='hide'>>=
-mm_tau_est_eps 
+% List of genes that are differentially expressed according to the model \ref{eq1} 
+% and using the evaluation rule \ref{ev1m} is 
+<<tidy=FALSE,message=FALSE,echo=FALSE>>=
+#mm_tau_est_eps 
 load("data.RData")
-str(data)
+#str(data)
 library(dplyr)
+# degene <- arrange(as.data.frame(cbind(data$line[data$gene ==mm_tau_est_eps[1]], 
+#       data$y[data$gene ==mm_tau_est_eps[1]], 
+#       data$y[data$gene ==mm_tau_est_eps[2]],
+#       data$y[data$gene ==mm_tau_est_eps[3]],
+#       data$y[data$gene ==mm_tau_est_eps[4]], 
+#       data$y[data$gene ==mm_tau_est_eps[5]],
+#       data$y[data$gene ==mm_tau_est_eps[6]],
+#       data$y[data$gene ==mm_tau_est_eps[7]], 
+#       data$y[data$gene ==mm_tau_est_eps[8]],
+#       data$y[data$gene ==mm_tau_est_eps[9]],
+#       data$y[data$gene ==mm_tau_est_eps[10]], 
+#       data$y[data$gene ==mm_tau_est_eps[11]],
+#       data$y[data$gene ==mm_tau_est_eps[12]],
+#       data$y[data$gene ==mm_tau_est_eps[13]])),V1)
+# 
+
 degene <- arrange(as.data.frame(cbind(data$line[data$gene ==mm_tau_est_eps[1]], 
       data$y[data$gene ==mm_tau_est_eps[1]], 
       data$y[data$gene ==mm_tau_est_eps[2]],
-      data$y[data$gene ==mm_tau_est_eps[3]],
-      data$y[data$gene ==mm_tau_est_eps[4]], 
-      data$y[data$gene ==mm_tau_est_eps[5]],
-      data$y[data$gene ==mm_tau_est_eps[6]],
-      data$y[data$gene ==mm_tau_est_eps[7]], 
-      data$y[data$gene ==mm_tau_est_eps[8]],
-      data$y[data$gene ==mm_tau_est_eps[9]],
-      data$y[data$gene ==mm_tau_est_eps[10]], 
-      data$y[data$gene ==mm_tau_est_eps[11]],
-      data$y[data$gene ==mm_tau_est_eps[12]],
-      data$y[data$gene ==mm_tau_est_eps[13]])),V1)
-
+      data$y[data$gene ==mm_tau_est_eps[3]])),V1)
 
 colnames(degene) <- c("line", paste("gene",mm_tau_est_eps,sep = ""))
 degene
 @
 \section{Conclusion}
 
-In this project, we develop a full Bayesian model to analyzing RNASeq data. We consider two different prior specification. The first one is point mass mixture prior on the difference of expression data between two lines. The second ons is 
-the horsehoe prior. We conduct a simulation study to evaluate the efficiency 
-of these two specifications in prediting the true differences between two lines. 
-The result turns out that under the point mass mixture prior model-based generated data, the mixture prior model outperforms the horseshoe prior. 
-Finally, we adopt the point mass mixture prior model to analyze the RNASeq data and obtain a list of differential expressed genes (3 genes). Furthermore, the full RNASeq data consists of about 14000 genes, and it takes about 8 hours to run MCMC posterior samples on my computer, also the data file of posterior samples 
-for the parameter ($\tau_j, \alpha_j, \beta_j$) is about 6GB, which is very big. 
-One important point to note is that the  number of resulting differential expression genes (signal genes) will depend on the threshold value $\varepsilon$. Therefore, more work needs to be done to account for the false discovery rate
+In this project, we develop a full Bayesian approach to analyze RNASeq data. We consider two models with different prior specifications. The first one is point mass mixture prior model \eqref{eq1}. The second ons is 
+the horsehoe prior model \eqref{eq2}. We conduct a simulation study to evaluate the efficiency 
+of  these models in prediting the true differences between two lines. 
+The simulation results  suggest that the point mass mixture prior model \eqref{eq1} outperforms the horseshoe prior model \eqref{eq2} for the simulation scenarios \eqref{sim}. 
+Then, we use the point mass mixture prior model \eqref{eq1} to analyze the RNASeq data and obtain a list of 3 signal genes (differentiallly expressed genes) in total 200 genes. However, the full RNASeq data consists of about 14000 genes, and it takes about 8 hours to run MCMC posterior samples on my computer, also the size of posterior samples 
+for the parameters ($\tau_j, \alpha_j, \beta_j$) is about 6GB, which is very big. 
+One important point to note is that  using metric \eqref{ev2}, the  number of signal genes depends on the threshold value $\varepsilon$. Therefore, more work needs to be done to account for the false discovery rate
 when changing the threshold value $\varepsilon$.
 
-
+\begin{appendices}
+All plots of the projects are below.
+\end{appendices}
 \end{document}
