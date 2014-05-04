@@ -493,11 +493,11 @@ mh <- jags.model(textConnection(modelh), data[1:5] ,n.chains = 1)
 @
 
 
-<<plottau_mm,echo=FALSE,fig.align='center',fig.cap='Posterior samples of $\\tau_j, j = 1,\\dots, 4$ for the point mass mixture prior model (\\ref{eq1}).',fig.pos='H'>>=
+<<plottau_mm,echo=FALSE,fig.align='center',fig.cap='Posterior samples of $\\tau_j, j = 1,\\dots, 4$ for the point mass mixture prior model (\\ref{eq1}).',fig.pos='H',out.width='.5\\linewidth'>>=
 plot(resm[, paste("tau[",1:4,"]",sep ="")])
 @
 
-<<acf,echo=FALSE,fig.cap='The dianogstic plots acf of the posterior MCMC samples of $\\tau_j, j =1,\\dots,4$ under the point mass mixture prior model (\\ref{eq1}).',fig.pos='H'>>=
+<<acf,echo=FALSE,fig.cap='The dianogstic plots acf of the posterior MCMC samples of $\\tau_j, j =1,\\dots,4$ under the point mass mixture prior model (\\ref{eq1}).',fig.pos='H',out.width='.5\\linewidth'>>=
 par(mfrow = c(2,2))
 acf(resm[[1]][,"tau[1]"], main = "tau1")
 acf(resm[[1]][,"tau[2]"], main = "tau2")
@@ -508,12 +508,12 @@ acf(resm[[1]][,"tau[4]"], main = "tau4")
 
 
 
-<<plottau_mh,echo=FALSE,fig.cap='Posterior samples of $\\tau_j, j = 1,\\dots, 4$ for the horseshoe prior model (\\ref{eq2}).',fig.pos='H'>>=
+<<plottau_mh,echo=FALSE,fig.cap='Posterior samples of $\\tau_j, j = 1,\\dots, 4$ for the horseshoe prior model (\\ref{eq2}).',fig.pos='H',out.width='.50\\linewidth'>>=
 #data$tau
 plot(resh[, paste("tau[",1:ngene,"]",sep ="")])
 @
 
-<<acfh,fig.cap='The dianogstic plots acf of the posterior MCMC samples of $\\tau_j, j =1,\\dots,4$ under the horseshoe prior model (\\ref{eq2}).',echo=FALSE,fig.pos='H'>>=
+<<acfh,fig.cap='The dianogstic plots acf of the posterior MCMC samples of $\\tau_j, j =1,\\dots,4$ under the horseshoe prior model (\\ref{eq2}).',echo=FALSE,fig.pos='H',out.width='.50\\linewidth'>>=
 par(mfrow = c(2,2))
 acf(resh[[1]][,"tau[1]"], main = "tau1")
 acf(resh[[1]][,"tau[2]"], main = "tau2")
@@ -524,7 +524,8 @@ acf(resh[[1]][,"tau[4]"], main = "tau4")
 
 \section{Analyze RFI data}
 
-As mentioned above, we only analyze 200 genes in the RNASeq - RFI data set for the simplicity. Based on the simulation results, we will use the point mass mixture prior Poission model (\ref{eq1}) with two metrics \eqref{ev1m} and \eqref{ev2} to see how they perform in analyzing this real dataset. As it turns out, the model \eqref{eq1} with metric \eqref{ev1m} gives 184 signals which is a very high number and is not appropriate in reality that we \textit{believe} the signals are sparse. On the other hand, the model \eqref{eq1} with metric \eqref{ev2} and $\varepsilon = 0.5$ gives 3 signals
+As mentioned above, we only analyze 200 genes in the RNASeq - RFI data set for the simplicity. Based on the simulation results, we will use the point mass mixture prior Poission model (\ref{eq1}) with two metrics \eqref{ev1m} and \eqref{ev2} to see how they perform in analyzing this real dataset. Figures \ref{fig:taurna} and \ref{fig:acfrna} show posterior samples and acf dianogstic plots of $\tau_1, \tau_2, \tau_3, \tau_4$,
+
 
 <<realdata,cache = TRUE,results='hide',echo=FALSE>>=
 load("data.RData")
@@ -532,14 +533,15 @@ mm <- jags.model(textConnection(modelm), data,n.chains = 1)
 resm <- coda.samples(mm, c("tau","beta", "alpha", "bintau", "binbeta"), 2000) 
 @
 
-<<echo=FALSE,fig.cap='Posterior samples of $\\tau_j, j = 1,\\dots, 4$ for the real data RNA-Seq under the point mass mixture prior model (\\ref{eq1}).',fig.pos='H'>>=
+
+<<taurna,echo=FALSE,fig.cap='Posterior samples of $\\tau_j, j = 1,\\dots, 4$ for the real data RNA-Seq under the point mass mixture prior model (\\ref{eq1}).',fig.pos='H',out.width='.50\\linewidth'>>=
 plot(resm[, paste("tau[",c(1:4),"]",sep ="")])
 
 
 @
 
 
-<<acfrna,fig.cap='The dianogstic plots acf of the posterior MCMC samples of $\\tau_j, j =1,\\dots,4$ for the real RNA-Seq data under the point mass mixture prior model (\\ref{eq1}).',echo=FALSE,fig.pos='H'>>=
+<<acfrna,fig.cap='The dianogstic plots acf of the posterior MCMC samples of $\\tau_j, j =1,\\dots,4$ for the real RNA-Seq data under the point mass mixture prior model (\\ref{eq1}).',echo=FALSE,fig.pos='H',out.width='.50\\linewidth'>>=
 par(mfrow = c(2,2))
 acf(resm[[1]][,"tau[1]"], main = "tau1")
 acf(resm[[1]][,"tau[2]"], main = "tau2")
@@ -547,8 +549,7 @@ acf(resm[[1]][,"tau[3]"], main = "tau3")
 acf(resm[[1]][,"tau[4]"], main = "tau4")
 
 @
-
-
+As it turns out, the model \eqref{eq1} with metric \eqref{ev1m} gives 184 signals which is a very high number and is not appropriate in reality that we \textit{believe} the signals are sparse. On the other hand, the model \eqref{eq1} with metric \eqref{ev2} and $\varepsilon = 0.5$ gives 3 signals
 <<tidy=FALSE,echo=FALSE,results='hide'>>=
 mm_tau_est <- which(apply(resm[[1]][,paste("bintau[", 1:200,"]",sep ="")], 2, 
       function(x) mean(abs(1-x))) > 0.5)
@@ -562,7 +563,6 @@ mm_tau_est_eps <- which(apply(resm[[1]][,paste("tau[", 1:200,"]",sep ="")], 2,
 length(mm_tau_est_eps)
 
 @
-
 
 % List of genes that are differentially expressed according to the model \ref{eq1} 
 % and using the evaluation rule \ref{ev1m} is 
@@ -595,18 +595,15 @@ degene <- arrange(as.data.frame(cbind(data$line[data$gene ==mm_tau_est_eps[1]],
 colnames(degene) <- c("line", paste("gene",mm_tau_est_eps,sep = ""))
 degene
 @
-\section{Conclusion}
 
+
+
+\section{Conclusion}
 In this project, we develop a full Bayesian approach to analyze RNASeq data. We consider two models with different prior specifications. The first one is point mass mixture prior model \eqref{eq1}. The second ons is 
 the horsehoe prior model \eqref{eq2}. We conduct a simulation study to evaluate the efficiency 
-of  these models in prediting the true differences between two lines. 
-The simulation results  suggest that the point mass mixture prior model \eqref{eq1} outperforms the horseshoe prior model \eqref{eq2} for the simulation scenarios \eqref{sim}. 
+of  these models in predicting the true differences between two lines. 
+The simulation results suggest that the point mass mixture prior model \eqref{eq1} outperforms the horseshoe prior model \eqref{eq2} for the simulation scenarios \eqref{sim}. 
 Then, we use the point mass mixture prior model \eqref{eq1} to analyze the RNASeq data and obtain a list of 3 signal genes (differentiallly expressed genes) in total 200 genes. However, the full RNASeq data consists of about 14000 genes, and it takes about 8 hours to run MCMC posterior samples on my computer, also the size of posterior samples 
 for the parameters ($\tau_j, \alpha_j, \beta_j$) is about 6GB, which is very big. 
-One important point to note is that  using metric \eqref{ev2}, the  number of signal genes depends on the threshold value $\varepsilon$. Therefore, more work needs to be done to account for the false discovery rate
-when changing the threshold value $\varepsilon$.
-
-\begin{appendices}
-All plots of the projects are below.
-\end{appendices}
+One important point to note is that  using metric \eqref{ev2}, the  number of signal genes depends on the threshold value $\varepsilon$. Therefore, more work needs to be done to account for the false discovery rate when changing the threshold value $\varepsilon$.
 \end{document}
