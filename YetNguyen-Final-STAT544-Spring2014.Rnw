@@ -493,11 +493,11 @@ mh <- jags.model(textConnection(modelh), data[1:5] ,n.chains = 1)
 @
 
 
-<<plottau_mm,echo=FALSE,fig.align='center',fig.cap='Posterior samples of $\\tau_j, j = 1,\\dots, 4$ for the point mass mixture prior model (\\ref{eq1}).',fig.pos='H',out.width='.5\\linewidth'>>=
+<<plottau_mm,echo=FALSE,fig.align='center',fig.cap='Posterior samples of $\\tau_j, j = 1,\\dots, 4$ for the point mass mixture prior model (\\ref{eq1}).',fig.pos='b'>>=
 plot(resm[, paste("tau[",1:4,"]",sep ="")])
 @
 
-<<acf,echo=FALSE,fig.cap='The dianogstic plots acf of the posterior MCMC samples of $\\tau_j, j =1,\\dots,4$ under the point mass mixture prior model (\\ref{eq1}).',fig.pos='H',out.width='.5\\linewidth'>>=
+<<acf,echo=FALSE,fig.cap='The dianogstic plots acf of the posterior MCMC samples of $\\tau_j, j =1,\\dots,4$ under the point mass mixture prior model (\\ref{eq1}).',fig.pos='b'>>=
 par(mfrow = c(2,2))
 acf(resm[[1]][,"tau[1]"], main = "tau1")
 acf(resm[[1]][,"tau[2]"], main = "tau2")
@@ -508,12 +508,12 @@ acf(resm[[1]][,"tau[4]"], main = "tau4")
 
 
 
-<<plottau_mh,echo=FALSE,fig.cap='Posterior samples of $\\tau_j, j = 1,\\dots, 4$ for the horseshoe prior model (\\ref{eq2}).',fig.pos='H',out.width='.50\\linewidth'>>=
+<<plottau_mh,echo=FALSE,fig.cap='Posterior samples of $\\tau_j, j = 1,\\dots, 4$ for the horseshoe prior model (\\ref{eq2}).',fig.pos='b'>>=
 #data$tau
 plot(resh[, paste("tau[",1:ngene,"]",sep ="")])
 @
 
-<<acfh,fig.cap='The dianogstic plots acf of the posterior MCMC samples of $\\tau_j, j =1,\\dots,4$ under the horseshoe prior model (\\ref{eq2}).',echo=FALSE,fig.pos='H',out.width='.50\\linewidth'>>=
+<<acfh,fig.cap='The dianogstic plots acf of the posterior MCMC samples of $\\tau_j, j =1,\\dots,4$ under the horseshoe prior model (\\ref{eq2}).',echo=FALSE,fig.pos='b'>>=
 par(mfrow = c(2,2))
 acf(resh[[1]][,"tau[1]"], main = "tau1")
 acf(resh[[1]][,"tau[2]"], main = "tau2")
@@ -534,14 +534,14 @@ resm <- coda.samples(mm, c("tau","beta", "alpha", "bintau", "binbeta"), 2000)
 @
 
 
-<<taurna,echo=FALSE,fig.cap='Posterior samples of $\\tau_j, j = 1,\\dots, 4$ for the real data RNA-Seq under the point mass mixture prior model (\\ref{eq1}).',fig.pos='H',out.width='.50\\linewidth'>>=
+<<taurna,echo=FALSE,fig.cap='Posterior samples of $\\tau_j, j = 1,\\dots, 4$ for the real data RNA-Seq under the point mass mixture prior model (\\ref{eq1}).',fig.pos='b'>>=
 plot(resm[, paste("tau[",c(1:4),"]",sep ="")])
 
 
 @
 
 
-<<acfrna,fig.cap='The dianogstic plots acf of the posterior MCMC samples of $\\tau_j, j =1,\\dots,4$ for the real RNA-Seq data under the point mass mixture prior model (\\ref{eq1}).',echo=FALSE,fig.pos='H',out.width='.50\\linewidth'>>=
+<<acfrna,fig.cap='The dianogstic plots acf of the posterior MCMC samples of $\\tau_j, j =1,\\dots,4$ for the real RNA-Seq data under the point mass mixture prior model (\\ref{eq1}).',echo=FALSE,fig.pos='b'>>=
 par(mfrow = c(2,2))
 acf(resm[[1]][,"tau[1]"], main = "tau1")
 acf(resm[[1]][,"tau[2]"], main = "tau2")
