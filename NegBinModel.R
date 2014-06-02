@@ -5,13 +5,13 @@ modelm <- "
 model{
 # likelihood 
 for (i in 1:length(y)){
-y[i] ~ dnegbin(lambda[i], omega[i])
+y[i] ~ dnegbin((1/omega[gene[i]])/(lambda[i] + 1/omega[gene[i]]), 1/omega[gene[i]])
 log(lambda[i]) <- alpha[gene[i]] + (-1)^line[i]*tau[gene[i]] + beta[gene[i]]*cov[i]   
 }
 # prior level 1
 for (i in 1:ngene){
 alpha[i] ~ dnorm(0,1/10000)
-
+log(omega[i]) ~ dnorm(0, 1/10000)
 tau[i] <- (1-bintau[i])*normtau[i]
 bintau[i] ~ dbern(pitau)
 normtau[i] ~ dnorm(0,1/sigmatau^2)
